@@ -1,0 +1,74 @@
+---
+pubDate: 2024-07-23
+title: "The Blast Radius Was the Product"
+description: "A security update meant to protect hospitals, airlines, and workstations became the outage, revealing how automatic, privileged control turns safety into a fleet-wide blast radius."
+category: essay
+tags: ["cybersecurity", "systems", "technology"]
+slug: the-blast-radius-was-the-product
+minutesRead: 11
+
+---
+
+The machines broke all at once. The cure went one at a time.
+
+On the morning of July 19, 2024, millions of Windows computers running a security product called CrowdStrike Falcon took a configuration update, read it, and dropped into a loop: blue screen, restart, blue screen. The file reached them automatically, all inside the same short window. Microsoft put the damage at 8.5 million devices, and was careful to add that this was less than one percent of all the Windows machines in the world. The number sounds modest until you notice where those machines sat. In hospital record systems. In airline crew-tracking tools. In 911 dispatch centers, pharmacy prescribing software, the desks of live newsrooms.
+
+Fixing them was the strange part. Reverting the bad file kept new machines from catching it, but for the ones already stuck in the loop, a normal remote fix could not reliably reach them. A crashed machine is barely on the network; you cannot count on pushing it anything. So for many of those, the repair was physical. Someone had to sit down at the computer, force it into Safe Mode, and delete one file by hand. If BitLocker had encrypted the disk, they first had to fetch a recovery key from a second device and type it in. Some models needed the F4 key, some needed F11. Staff at one cancer hospital, as an employee described it, had to "go to every computer in the hospital individually." A former director at the security company said it plainly: "A lot of tech teams are going to have a busy weekend."
+
+Hold those two facts side by side, because the whole argument lives in the gap between them. The break was fast, wide, and automatic. The repair, for the machines already down, was slow, local, and done by hand. One machine, one keyboard, one person, over and over, for days.
+
+## Ruling out the easy answers
+
+The easy reading is that CrowdStrike shipped a bad file and got unlucky. That is true, and it is not interesting. Bad files are not rare accidents you can engineer out of existence; over a long enough run they are a certainty, and any vendor pushing updates to a whole fleet has to design as if one will eventually get out.
+
+The next reading is that this was one careless company. That does not survive the record. In April 2010, McAfee pushed an update that decided a core Windows file, svchost.exe, was a virus, quarantined it, and dropped Windows XP machines into the same reboot loop. The University of Michigan's health system watched about 8,000 of its 25,000 computers go down. Rhode Island hospitals turned away non-trauma emergency patients. Police in Lexington, Kentucky wrote their reports by hand and shut off the terminals in their cruisers. Administrators, as reporting at the time put it, "trekked from computer to computer" to install the repair. Change the date and the logo and it is the same day. Symantec did a smaller version in 2012. Webroot did one in 2017 that lasted about thirteen minutes and still managed to flag critical Windows files as malicious across its fleet. Thirteen minutes was enough. Major endpoint vendors have been here before.
+
+The third reading is the comfortable one, the one that lets everybody off the hook: complex systems are fragile, everything is connected, who could have known. This is wrong in a specific way that matters. Nothing here crawled out of tangled complexity. There was one file, with one privileged reader, sitting on a very large number of nearly identical machines, and it reached the whole batch at once instead of a small pool first, where someone could have caught it. That is not complexity. That is a design.
+
+Which leaves the explanation that actually fits, and it is not a reassuring one. The outage was not the system failing. It was the system doing what we built it to do. We have decided, without ever quite deciding, that the safe way to protect millions of machines is to hand one company the power to change all of them fast, faster than any customer can test each change on its own machines first. Then we act surprised that the same power can break them just as fast. The reach that cures is the reach that kills. You do not get one without the other. The blast radius is not a flaw in the product. It is the product.
+
+## The four conditions
+
+A failure of this exact kind needs four conditions, and this class of software supplies all four on purpose. Reach: one company's code running on millions of machines. Privilege: that code runs deep, down at the kernel, trusted enough to halt the whole computer. Speed: new instructions arrive and take effect automatically, faster than a customer can vet them on a few of its own machines. Uniformity: the rollout is not staged, so a whole batch of machines takes the same file in the same short window. Hold all four and a single bad file becomes an off switch for the whole fleet it reaches. Nothing exotic has to go wrong; that is simply what the four conditions add up to.
+
+Falcon had all four, and the mechanism is worth seeing in miniature. The bad file, Channel File 291, was not a program. It was configuration data that told Falcon how to watch something called named pipes, an ordinary way Windows programs talk to each other, and the new version was meant to catch a trick attackers use to hide their traffic. The file even carried a ".sys" name and sat in a folder called "drivers," which fooled people into thinking it was kernel code. It was just data. But it was data read by kernel-level software allowed to bring the operating system down, and reading it triggered a logic error that did exactly that. Because Falcon loads early in the boot sequence, each restart handed the machine the same file and crashed it again before ordinary remote management could get a word in. The window in which that file could reach a computer was about seventy-eight minutes, from 04:09 to 05:27 UTC, when the change was pulled back. Seventy-eight minutes to send it. Days, in some organizations, to recover.
+
+The near-miss proves the rule. Mac and Linux machines were untouched, not because they are better, but because they were not part of this particular arrangement: they did not carry this file, read by this privileged reader, on this schedule. The computers that lived were the ones outside the reach. That is the tell. The damage tracked the design, not the technology in general.
+
+So here is the test, and you can use it on anything sold to you as automatic safety. Ask how many machines one change touches, how deep it reaches, and how fast, with no staged rollout or local check to catch it in between. That single answer is both your protection and your exposure. It is not two numbers. It is one.
+
+## Eight and a half million, and one of them hers
+
+The number is 8.5 million. Here is what one of those machines was.
+
+A woman had driven about five hours from Malone, New York, to a Boston hospital. She was there for a pre-operation appointment before open-heart surgery scheduled for August. At six in the morning her phone rang. "She said 'Your appointment is canceled,' and I said 'What? Is this for real?'" She would have to turn around, drive home, and reschedule. "I was pretty pissed," she said. "But what are you going to do?" The family decided to save the day another way: "We're going to go whale watching and take the kids to see different things."
+
+She was one appointment. That morning the hospital system canceled all of its non-urgent surgeries, procedures, and visits across fifteen hospitals, because the machines that hold medical histories and allergy lists were showing a blue screen. At one of those hospitals, a nurse who was not even on the schedule had come in after seeing the words "digital crisis" on her phone. "We do everything on our computers now," she said. A woman in her seventies who had had chest pain the night before reached the emergency room on her walker and said, "I know from experience that I'm not going to get taken. So now what do I do?" A patient who had traveled from Florida, who had lived with a feeding tube in her nose for three months waiting for a transplant, sat in the hospital until they told her the operation was off. The staff, she said, "really, really tried until the end."
+
+None of these people were hacked. No attacker touched them. The thing that stopped their care was the thing installed to protect it, and it stopped their care in the same stroke, for the same reason, in city after city. In New Hampshire, 911 dispatchers watched calls arrive that they could not pick up. At airports, agents filled out boarding passes by hand. In a pharmacy, the prescription would not print, so someone wrote it out.
+
+## The defenders are not wrong
+
+A large share of the people who do this work for a living would read everything above and disagree with where it points. They have a case.
+
+Attackers do not wait for a change board. The same company's own threat report, from earlier in 2024, found that once intruders get a foothold, the time before they move deeper through a network had fallen to about 62 minutes on average, with a fastest case of two minutes and seven seconds. In about three quarters of what it detected there was no malware file at all; the intruder simply behaved like a logged-in user, which is exactly the kind of thing you can only catch by watching behavior in real time, up close, with software that has deep access and current instructions. Standard security doctrine, the kind written down by NIST years before Falcon existed, says protection should sit on every host, stay current, be centrally managed, and be hard for a user to switch off. None of that is vendor greed; it is the orthodox answer to a real and fast enemy. A hospital frozen for a weekend by its own security tool is a catastrophe. A hospital whose records are held for ransom because a detection update sat in a review queue for three days is also a catastrophe, and it is the one the whole arrangement was built to prevent.
+
+The naive version of my thesis, the one that says just slow down and put a human in front of every update, gets people breached on a timeline the attacker picks, not one we pick. So it is not enough to point at the wreckage and call the design foolish. The design is answering a threat that is genuinely there.
+
+## Smaller is not gone
+
+The fixes people proposed that week are real, and worth doing, because they would have made this failure smaller. Send the update to a small pool of machines first, a canary, watch it, then widen. Treat a configuration file with the same suspicion as a code release, because this one seems to have slipped whatever checks it should have faced. Stagger who gets what, and when. Keep the disaster-recovery tooling ready so a broken fleet comes back faster. None of this is cosmetic. Done well, it could have caught the bad file in the canary pool and turned a fleet-wide outage into a contained one. Take all of it.
+
+<PullQuote>
+A canary group full of production hospitals and airport counters is not a canary; it is a smaller disaster wearing the word "test."
+</PullQuote>
+
+But notice what those fixes touch and what they leave alone. They shrink how many machines a bad file hits, and how fast, and they buy back a little human review. They do not touch reach or privilege. And a smaller pool is only safe if the machines in it are chosen with the real question in mind: what actually stops working if this batch goes down? A canary group full of production hospitals and airport counters is not a canary; it is a smaller disaster wearing the word "test." Staging lowers the odds and the size of the failure. It does not change the underlying deal, which is that you are paying one vendor for deep, fast, fleet-wide control precisely so it can act before you can. You can make the failure rarer and smaller. You cannot buy the reach and decline the exposure. They are the same capability.
+
+Which means the choice was never speed against safety. It was one kind of failure against another. A fast, correlated, self-inflicted failure that lands all at once on a Friday, against a slow, scattered, attacker-inflicted failure that lands whenever an adversary decides. We chose the first. Mostly the choice has paid, quietly, for years, which is why almost no one remembers making it. The bill only shows up when a big batch of the fleet falls over on the same morning, and even then we tend to read it as an accident rather than a price.
+
+## The units we forgot to count
+
+By that Sunday, the hospital system said it was fully functional, and that appointments would go ahead as planned on Monday. That is how these stories close in the record: a date when the machines came back, counted, confirmed, filed. Not every operation recovered that fast; some were still canceling work days later, the airlines worst of all. But the machines all get counted in the end, because a machine is a thing you can count.
+
+What the record does not hold is what that canceled morning will cost her: whether her August surgery still goes ahead on schedule, or slips, or what a delayed heart operation does to a body over the weeks it waits. The record knows she had to turn around and drive home. It does not yet know the rest. There is no field for it. We know the outage down to the device: 8.5 million of them, less than one percent, each one logged and, eventually, worked through. We do not know it down to the person, because the person was never the unit we were measuring. That is the arrangement we keep renewing, every time we agree that the safe thing is to let one file reach a whole fleet before anyone can stop it. The machines we get back, and we count them. The rest of it we mark rescheduled, and we do not.
