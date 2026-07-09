@@ -336,6 +336,21 @@ img {
   line-height: 0.82;
 }
 
+.prose :where(code):not(:where(pre code, [class~="not-prose"], [class~="not-prose"] *)) {
+  padding: 0.12em 0.36em;
+  border-radius: 0.28rem;
+  background: color-mix(in oklab, var(--color-line) 46%, var(--color-paper));
+  font-size: 0.86em;
+  font-weight: 400;
+  overflow-wrap: break-word;
+}
+
+/* Tailwind Typography wraps inline <code> in literal backticks; drop them. */
+.prose :where(code):not(:where(pre code, [class~="not-prose"], [class~="not-prose"] *))::before,
+.prose :where(code):not(:where(pre code, [class~="not-prose"], [class~="not-prose"] *))::after {
+  content: none;
+}
+
 .prose :where(a) {
   color: var(--color-ink);
   text-decoration-color: color-mix(in oklab, var(--color-accent) 72%, transparent);
