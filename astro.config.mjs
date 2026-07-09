@@ -41,7 +41,7 @@ function findFirstParagraph(node) {
 }
 
 export default defineConfig({
-  site: 'https://animeshkundu.github.io',
+  site: 'https://animesh.kundus.in',
   base: '/essays',
   integrations: [expressiveCode(), mdx(), sitemap()],
   vite: {
