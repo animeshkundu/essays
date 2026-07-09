@@ -1,0 +1,22 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getAllTags, getPublishedEssays } from '../../lib/content';
+import { tagPath } from '../../lib/paths';
+
+const tags = getAllTags(await getPublishedEssays());
+---
+
+<BaseLayout title="Tags" description="Browse essays by tag.">
+  <section class="page measure">
+    <p class="kicker">Tags</p>
+    <h1>Browse by tag.</h1>
+    <ul class="tag-list">
+      {tags.map(({ tag, count }) => (
+        <li>
+          <a href={tagPath(tag)}>{tag}</a>
+          <span class="tag-count">{count}</span>
+        </li>
+      ))}
+    </ul>
+  </section>
+</BaseLayout>

@@ -1,0 +1,34 @@
+---
+import { getCollection, render } from 'astro:content';
+import PostLayout from '../../layouts/PostLayout.astro';
+import PullQuote from '../../components/mdx/PullQuote.astro';
+import Figure from '../../components/mdx/Figure.astro';
+import Callout from '../../components/mdx/Callout.astro';
+import Aside from '../../components/mdx/Aside.astro';
+import { isPublished, sortByNewest } from '../../lib/content';
+
+export async function getStaticPaths() {
+  const essays = await getCollection('essays');
+  return essays
+    .filter((essay) => isPublished(essay.data))
+    .sort(sortByNewest)
+    .map((entry) => ({
+      params: { slug: entry.id },
+      props: { entry },
+    }));
+}
+
+const { entry } = Astro.props;
+const { Content } = await render(entry);
+const components = {
+  PullQuote,
+  Figure,
+  Callout,
+  Aside,
+  blockquote: PullQuote,
+};
+---
+
+<PostLayout entry={entry}>
+  <Content components={components} />
+</PostLayout>

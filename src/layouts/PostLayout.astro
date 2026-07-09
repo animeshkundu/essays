@@ -1,0 +1,36 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import BaseLayout from './BaseLayout.astro';
+import { basePath } from '../lib/paths';
+import { formatDate, formatMinutes, getMinutesRead } from '../lib/content';
+
+interface Props {
+  entry: CollectionEntry<'essays'>;
+}
+
+const { entry } = Astro.props;
+const { data } = entry;
+const metaParts = [formatDate(data.pubDate), data.category, formatMinutes(getMinutesRead(entry))].filter(Boolean);
+const tagText = data.tags.length ? data.tags.join(' · ') : undefined;
+const heroSrc = data.hero ? (data.hero.startsWith('http') ? data.hero : basePath(data.hero)) : undefined;
+---
+
+<BaseLayout title={data.title} description={data.description}>
+  <div class="post measure">
+    <header>
+      <h1 class="post-title">{data.title}</h1>
+      <p class="meta">
+        {metaParts.join(' · ')}{tagText ? ` · ${tagText}` : ''}
+      </p>
+      {heroSrc && (
+        <figure class="post-hero">
+          <img src={heroSrc} alt={data.heroAlt ?? data.title} loading="eager" decoding="async" />
+        </figure>
+      )}
+    </header>
+    <hr class="hairline" />
+    <article class="prose prose-lg">
+      <slot />
+    </article>
+  </div>
+</BaseLayout>

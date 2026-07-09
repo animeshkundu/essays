@@ -1,0 +1,17 @@
+---
+import { Image } from 'astro:assets';
+
+interface Props {
+  src: ImageMetadata;
+  alt: string;
+  caption?: string;
+  width?: 'content' | 'wide';
+}
+
+const { src, alt, caption, width = 'content' } = Astro.props;
+---
+
+<figure class:list={['figure', width === 'wide' && 'figure-wide']}>
+  <Image src={src} alt={alt} loading="lazy" decoding="async" />
+  {caption && <figcaption class="figure-caption">{caption}</figcaption>}
+</figure>

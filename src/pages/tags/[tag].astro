@@ -1,0 +1,32 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getAllTags, getMetaParts, getPublishedEssays, getTagSlug } from '../../lib/content';
+import { postPath } from '../../lib/paths';
+
+export async function getStaticPaths() {
+  const essays = await getPublishedEssays();
+  const tags = getAllTags(essays);
+  return tags.map(({ tag, slug }) => ({
+    params: { tag: slug },
+    props: { tag, essays: essays.filter((essay) => essay.data.tags.some((item) => getTagSlug(item) === slug)) },
+  }));
+}
+
+const { tag, essays } = Astro.props;
+---
+
+<BaseLayout title={tag} description={`Essays tagged ${tag}.`}>
+  <section class="page measure">
+    <p class="kicker">Tag</p>
+    <h1>{tag}</h1>
+    <div class="essay-list" aria-label={`Essays tagged ${tag}`}>
+      {essays.map((essay) => (
+        <article class="essay-entry">
+          <h2><a href={postPath(essay.id)}>{essay.data.title}</a></h2>
+          <p class="entry-description">{essay.data.description}</p>
+          <p class="meta">{getMetaParts(essay).join(' · ')}</p>
+        </article>
+      ))}
+    </div>
+  </section>
+</BaseLayout>

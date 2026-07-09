@@ -1,0 +1,25 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { getPublishedEssays, getMetaParts } from '../lib/content';
+import { postPath } from '../lib/paths';
+
+const essays = await getPublishedEssays();
+---
+
+<BaseLayout title="Essays" description="Essays by Animesh Kundu.">
+  <section class="home measure">
+    <p class="kicker">Essays</p>
+    <h1>The words are the interface.</h1>
+    <p class="home-intro">Notes on cities, attention, craft, and the ordinary things that shape a life.</p>
+
+    <div class="essay-list" aria-label="Essays">
+      {essays.map((essay) => (
+        <article class="essay-entry">
+          <h2><a href={postPath(essay.id)}>{essay.data.title}</a></h2>
+          <p class="entry-description">{essay.data.description}</p>
+          <p class="meta">{getMetaParts(essay).join(' · ')}</p>
+        </article>
+      ))}
+    </div>
+  </section>
+</BaseLayout>

@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Essays">
+  <rect width="64" height="64" rx="18" fill="#F7F3EC"/>
+  <path d="M20 45c7-1 13-6 16-14 2-6 5-10 10-12-2 8-5 15-10 20-4 4-9 6-16 6Z" fill="#A8462E"/>
+  <path d="M18 47c11-2 20-10 28-28" fill="none" stroke="#1B1B18" stroke-width="3" stroke-linecap="round"/>
+</svg>

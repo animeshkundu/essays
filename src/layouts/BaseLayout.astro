@@ -1,0 +1,58 @@
+---
+import { Font } from 'astro:assets';
+import '../styles/global.css';
+import { basePath } from '../lib/paths';
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const siteTitle = 'Essays';
+const { title = siteTitle, description = 'Essays by Animesh Kundu.' } = Astro.props;
+const pageTitle = title === siteTitle ? siteTitle : `${title} · ${siteTitle}`;
+const canonical = new URL(Astro.url.pathname, Astro.site ?? 'https://animeshkundu.github.io').toString();
+const year = new Date().getUTCFullYear();
+const path = Astro.url.pathname;
+const aboutHref = basePath('about/');
+const homeHref = basePath();
+const isAbout = path.endsWith('/about/') || path.endsWith('/about');
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <Font cssVariable="--font-serif" preload={[{ weight: '400', style: 'normal', subset: 'latin' }, { weight: '500', style: 'normal', subset: 'latin' }, { weight: '400', style: 'italic', subset: 'latin' }]} />
+    <Font cssVariable="--font-sans" preload={[{ weight: '400', style: 'normal', subset: 'latin' }, { weight: '600', style: 'normal', subset: 'latin' }]} />
+    <title>{pageTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <link rel="icon" type="image/svg+xml" href={basePath('favicon.svg')} />
+    <link rel="alternate" type="application/rss+xml" title="Essays" href={basePath('rss.xml')} />
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={canonical} />
+  </head>
+  <body>
+    <div class="site-shell">
+      <header class="site-header" aria-label="Primary">
+        <nav class="site-nav">
+          <a class="wordmark" href={homeHref}>Animesh Kundu</a>
+          <div class="nav-links">
+            <a href={homeHref} aria-current={!isAbout ? 'page' : undefined}>Essays</a>
+            <a href={aboutHref} aria-current={isAbout ? 'page' : undefined}>About</a>
+          </div>
+        </nav>
+      </header>
+      <main class="site-main">
+        <slot />
+      </main>
+      <footer class="site-footer">
+        <span>{year} · Animesh Kundu</span>
+      </footer>
+    </div>
+  </body>
+</html>
