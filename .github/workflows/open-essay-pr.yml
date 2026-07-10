@@ -49,7 +49,7 @@ jobs:
             exit 0
           fi
 
-          # Title and body are built only from the validated slug (a shell variable, never a ${{ }}
+          # Title and body are built only from the validated slug (a shell variable, not a workflow
           # expression), so no untrusted text reaches the command; gh reads GH_TOKEN from the env.
           gh pr create \
             --repo "$REPO" \
