@@ -1,85 +1,60 @@
 name: Open essay PR
 
-# The engine repo (blog) pushes a finished essay as branch essay/<YYYY-MM-DD-slug>. This workflow reacts
-# to that push and opens a pull request against main using the built-in GITHUB_TOKEN, so no cross-repo
-# token has to be created or rotated. Merging the PR triggers deploy.yml, which publishes to Pages. The
-# ref name is trusted (GitHub sets it), but it is still validated to the exact essay/<date>-<slug> shape;
-# any branch that does not match is ignored (the job exits cleanly), so this only ever acts on real
-# essay branches. All derived values are passed via env and never inlined as ${{ }} into the shell.
+# The engine repo pushes a finished essay as branch essay/<YYYY-MM-DD-slug>. This workflow reacts to that
+# push and opens a pull request against main using the built-in GITHUB_TOKEN, so no cross-repo token is
+# needed. Merging the PR triggers deploy.yml, which publishes to Pages. The ref name is set by GitHub and
+# is validated to the exact essay/<date>-<slug> shape; anything else exits cleanly and opens nothing.
+# All derived values are passed via env and never inlined as ${{ }} into the shell.
 
 on:
   push:
     branches:
-      - 'essay/**'
+      - "essay/**"
 
 permissions:
   contents: read
   pull-requests: write
 
-concurrency:
-  # One PR-open attempt per branch at a time, so two pushes to the same branch cannot open two PRs.
-  group: open-essay-pr-${{ github.ref }}
-  cancel-in-progress: false
-
 jobs:
   open-pr:
-    # A push event also fires when a branch is DELETED (e.g. the user deletes the essay branch after
-    # merging its PR). That carries no head to open a PR against, so skip deletions and only act on real
-    # branch pushes.
-    if: ${{ github.event.deleted != true }}
     runs-on: ubuntu-latest
-    timeout-minutes: 5
     steps:
       - name: Open the pull request
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
-          # github.ref_name is the branch short name, set by GitHub (not by pushed content).
           BRANCH: ${{ github.ref_name }}
+          DELETED: ${{ github.event.deleted }}
         run: |
           set -euo pipefail
 
-          # Validate the branch shape. It must be essay/ followed by a YYYY-MM-DD date and a slug. This
-          # both guards against any unexpected ref and lets us derive a clean slug. Anything that does
-          # not match is not one of our essay branches, so exit 0 quietly and open nothing.
+          # A push event also fires on branch DELETION (e.g. after a PR is merged and the branch removed).
+          # That carries no head to open a PR against, so skip it.
+          if [ "${DELETED:-}" = "true" ]; then
+            echo "Branch deletion event; nothing to do."
+            exit 0
+          fi
+
+          # Validate the branch shape, then derive a clean slug from it.
           if ! printf '%s' "$BRANCH" | grep -qE '^essay/[0-9]{4}-[0-9]{2}-[0-9]{2}-[a-z0-9-]+$'; then
             echo "Branch '$BRANCH' is not an essay branch; nothing to do."
             exit 0
           fi
+          SLUG="${BRANCH#essay/}"
+          SLUG="${SLUG#????-??-??-}"
 
-          # Slug = branch with essay/ and the leading YYYY-MM-DD- date stripped. Re-validate it on its
-          # own so the title is built only from a known-safe [a-z0-9-] token.
-          STEM="${BRANCH#essay/}"
-          SLUG="${STEM#????-??-??-}"
-          if ! printf '%s' "$SLUG" | grep -qE '^[a-z0-9-]+$'; then
-            echo "::error::derived slug '$SLUG' is not [a-z0-9-]"; exit 1
-          fi
-
-          # If a PR for this branch is already open, do nothing (idempotent across re-pushes / reruns).
-          EXISTING="$(gh pr list --repo "$REPO" --head "$BRANCH" --base main --state open --json number --jq '.[].number')"
-          if [ -n "$EXISTING" ]; then
-            echo "PR #$EXISTING already open for $BRANCH; nothing to do."
+          # Idempotent: if a PR for this branch is already open, do nothing.
+          if [ -n "$(gh pr list --repo "$REPO" --head "$BRANCH" --base main --state open --json number --jq '.[].number')" ]; then
+            echo "PR already open for $BRANCH; nothing to do."
             exit 0
           fi
 
-          # Title and body are built only from the validated slug (a literal shell variable, never a
-          # ${{ }} expression), so no untrusted text can reach the command. gh reads GH_TOKEN from the
-          # env; the token is never printed.
-          #
-          # The list check above is not atomic with the create, so tolerate the race: if a PR was opened
-          # for this branch between the check and here, `gh pr create` fails with an "already exists"
-          # message; treat only that specific failure as success and re-raise anything else.
-          if ! OUT="$(gh pr create \
+          # Title and body are built only from the validated slug (a shell variable, never a ${{ }}
+          # expression), so no untrusted text reaches the command; gh reads GH_TOKEN from the env.
+          gh pr create \
             --repo "$REPO" \
             --base main \
             --head "$BRANCH" \
             --title "Essay: $SLUG" \
-            --body "Draft essay for review. Merge to publish (this triggers the Pages deploy)." 2>&1)"; then
-            if printf '%s' "$OUT" | grep -qi 'already exists'; then
-              echo "PR already exists for $BRANCH; nothing to do."
-              exit 0
-            fi
-            printf '%s\n' "$OUT" >&2
-            echo "::error::failed to open PR for $BRANCH"; exit 1
-          fi
+            --body "Draft essay for review. Merge to publish (this triggers the Pages deploy)."
           echo "Opened PR for $BRANCH."
