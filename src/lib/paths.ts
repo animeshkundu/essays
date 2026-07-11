@@ -7,7 +7,7 @@ export function basePath(path = '') {
 }
 
 export function postPath(id: string) {
-  return basePath(`essays/${id}/`);
+  return basePath(`${id}/`);
 }
 
 export function tagPath(tag: string) {
