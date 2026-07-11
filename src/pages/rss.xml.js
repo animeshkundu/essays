@@ -15,7 +15,7 @@ export async function GET(context) {
       description: essay.data.description,
       pubDate: essay.data.pubDate,
       categories: essay.data.tags,
-      link: `essays/${essay.id}/`,
+      link: `${essay.id}/`,
     })),
   });
 }
