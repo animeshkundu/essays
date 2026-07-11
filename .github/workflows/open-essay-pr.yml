@@ -1,8 +1,7 @@
 name: Open essay PR
 
-# The engine repo pushes a finished essay as branch essay/<YYYY-MM-DD-slug>. This workflow reacts to that
-# push and opens a pull request against main using the built-in GITHUB_TOKEN, so no cross-repo token is
-# needed. Merging the PR triggers deploy.yml, which publishes to Pages. The ref name is set by GitHub and
+# When a new essay is pushed on an essay/<YYYY-MM-DD-slug> branch, this opens a pull request for it
+# against main so it can be reviewed and merged; merging publishes to Pages via deploy.yml. The ref name
 # is validated to the exact essay/<date>-<slug> shape; anything else exits cleanly and opens nothing.
 # All derived values are passed via env and never inlined as ${{ }} into the shell.
 
@@ -49,12 +48,13 @@ jobs:
             exit 0
           fi
 
-          # Title and body are built only from the validated slug (a shell variable, not a workflow
-          # expression), so no untrusted text reaches the command; gh reads GH_TOKEN from the env.
+          # A human-readable de-slug of the validated slug (a shell variable, not a workflow expression),
+          # so no untrusted text reaches the command; gh reads GH_TOKEN from the env.
+          TITLE="$(printf '%s' "$SLUG" | sed 's/-/ /g; s/^./\U&/')"
           gh pr create \
             --repo "$REPO" \
             --base main \
             --head "$BRANCH" \
-            --title "Essay: $SLUG" \
-            --body "Draft essay for review. Merge to publish (this triggers the Pages deploy)."
+            --title "$TITLE" \
+            --body ""
           echo "Opened PR for $BRANCH."
