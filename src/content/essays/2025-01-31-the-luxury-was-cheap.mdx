@@ -1,0 +1,56 @@
+---
+pubDate: 2025-01-31
+title: "The Luxury Was Cheap"
+description: "DeepSeek-R1 did not prove the AI buildout was fake. It showed that scarce compute alone was never a durable moat for premium reasoning."
+category: essay
+tags: ["ai", "deepseek", "moats", "markets"]
+slug: the-luxury-was-cheap
+minutesRead: 11
+
+---
+
+At a small lab, a fresh graduate is handed something most people never touch early in a career: abundant computing power, and permission to use it however curiosity points. No preset cap on the machines he could reach for, no approval to wait on. Have an idea, call on the training cluster, run it. Later this engineer describes the arrangement plainly to a reporter as "a luxury that few fresh graduates would get at any company."
+
+Hold that scene still. Now set the other one beside it.
+
+On Monday, January 27, 2025, a chipmaker loses close to $600 billion of market value in a single day. The exact figure is about $589 billion, the largest one-day loss for any company in the history of the U.S. market, more than double the same company's own previous record. The Nasdaq falls 3.1 percent. Networking firms and power companies drop alongside it. The trigger is a free app.
+
+The day before, on Sunday, that app had reached No. 1 on the U.S. App Store, up from No. 31 a few days earlier. Downloads roughly doubled over the weekend, from about a million on Friday to 2.6 million by Monday morning. The app was free to open. Behind it sat a reasoning model, released January 20, that its makers claimed matched the costly, closed model that had set the price of reasoning. The model's weights were posted under a permissive license, free to download. Its listed API prices were real, but they were low.
+
+Put the scenes together and a strange question falls out. How does a free app, from a lab whose name most people first saw that week sitting above ChatGPT, erase close to $600 billion from the most valuable chipmaker in the world?
+
+None of the easy answers survives contact.
+
+Start with hype. A viral app, a crowded weekend, a number that climbs because numbers were climbing. There is something to this. The App Store chart rewards how fast an app is being installed, not how many people keep it, so No. 1 was a velocity reading, not proof of a larger base than the incumbent. And the app buckled under its own success: by Monday the lab was limiting new sign-ups, citing "large-scale malicious attacks," while people already registered stayed logged in. But hype does not pull $600 billion out of a chipmaker. People downloading a chatbot do not. A stock tape is not a popularity contest. It is a room full of professionals repricing something they thought they understood. The app is why ordinary people learned the name. The tape is what the name made them believe.
+
+Then there is the bigger claim: the whole buildout was a bubble, and this pricked it. If a small lab can reach the frontier cheaply, the reasoning goes, then the data centers and the chips were a mania.
+
+Take that seriously, because the most informed people in the field took the other side of it, hard, and within days. Their argument is an old one from coal economics: when a resource gets cheaper and more efficient, we find so many new uses for it that total demand climbs rather than falls. Cheaper reasoning, on this view, does not shrink the appetite for chips; it floods the world with uses that were too expensive yesterday, and every one of them wants compute. The chipmaker itself said as much, calling the new model "an excellent AI advancement" and noting that running such models still "requires significant numbers" of its GPUs. And the largest of the spenders did not blink: days later it reaffirmed sixty to sixty-five billion dollars of capital spending for the year, betting that heavy investment would stay an advantage.
+
+That is the strongest case against reading the week as a burst bubble, and it is a good one. So grant it completely. Assume the appetite for compute keeps climbing. The interesting question survives anyway, because whether the buildout was a mania is not what actually broke on Monday.
+
+A last explanation says compute simply got cheap. The number everyone repeated was small: less than six million dollars to train the lab's late-2024 model. But that figure is narrow to the point of being misleading. It is a pretraining bill for graphics-card time on a single model, priced at two dollars a chip-hour. It leaves out the research that failed, the earlier experiments, the salaries, the hardware itself. By one analyst's estimate the lab and its parent had spent more than half a billion dollars on GPUs and had access to something like fifty thousand advanced chips. Scarce compute did not stop mattering. It still gated who could sit at the table at all. Compute did not become free.
+
+Rule out hype, rule out the bubble, rule out cheap silicon, and one explanation is left standing.
+
+What got repriced on Monday was not the demand for compute, and not the buildout. It was a belief: that owning scarce compute automatically bought durable pricing power over reasoning. That belief had a price tag. The broad narrative of scarce compute was two years old, written into a stock that had climbed 239 percent in 2023 and 171 percent the next year. The premium on reasoning itself was younger, dating only to the previous September. The free app pulled the tag off and let everyone read the number.
+
+<PullQuote>
+There is a difference between something that is hard to build and something that is hard to copy. Only the second is a moat.
+</PullQuote>
+
+The scarcity was real. The moat was never the scarcity.
+
+Look at what the premium was actually made of. The closed reasoning model, launched the previous September, was rate-limited to a few dozen messages a week. It hid its own chain of thought from users, and the company said plainly that one reason was "competitive advantage." Its listed price was about fifteen dollars per million tokens of input and sixty per million generated. The open model that arrived in January listed its comparable output at $2.19 per million tokens, roughly a twenty-seventh of the price. It shipped under a permissive license with smaller distilled versions, one of them light enough to run inside a web browser and still solve a quadratic equation. Those are listed prices, not audited costs, and they are not matched on capability; the cheap endpoint offered a shorter context window. But the direction is not subtle. A visible part of what had looked like a premium tier of reasoning turned out to be post-training craft, layered onto an already strong base model. That base was not cheap: it took a big pretraining run, its own architecture work, careful data, and a trail of earlier experiments. But the reasoning layer on top, the part that had carried the premium price, was the part that traveled.
+
+This is the distinction the whole week turned on. The chips are genuinely hard to build; almost no one on earth can make them. The reasoning was hard to build too. But once its weights were open, calling that reasoning, inspecting it, distilling it into a model a fraction of the size, and building on it were far easier than paying at a closed door. And easy is what dissolves a markup. A developer posted a low-level performance patch to a popular open-source project and noted that ninety-nine percent of the code had been written by the new model; his own work was writing the prompts and the tests. That is what a copyable advantage looks like in the wild. It does not stay scarce. It spreads.
+
+So if scarce compute was never the moat, what is? The lab's own founder had answered months before any of this, asked how his company could keep a lead while open-sourcing its ideas. In disruptive technology, he said, a closed lead is temporary; even a closed frontier lab cannot stop others from catching up. The durable thing is the team: people who grow, accumulate know-how, and build a culture that keeps generating the next idea. The market, panicking, was groping toward the same answer from the other side. One analyst insisted no large American enterprise would hand its stack to a brand-new foreign startup, a claim about trust and distribution, not about chips. Another warned the danger fell hardest on companies that had a model but had not productized it with wide distribution. The head of a large software firm said the real treasure was not the model, which he called a commodity, but the data and metadata around it. Reliability belonged on the list too: the app broke at the exact moment of maximum attention. And trust belonged on it most of all. A user in Mexico watched the free app begin a frank answer about free speech, the text filling the screen line by line, then watched it erased midstream and replaced with an offer to talk about math instead. By one careful evaluation the model refused about eighty-five percent of prompts on a set of sensitive topics.
+
+Distribution, latency, data, workflow, reliability, trust. Notice what is missing. Owning scarce compute, by itself, is not on that list. The chips and the clouds and the networks may still capture enormous value, and probably will. What scarce compute cannot do is hold a premium on reasoning just by being scarce.
+
+Now return to the compute argument and let it win outright. Suppose cheaper reasoning does make total demand explode, and whoever owns the chips and the clouds and the distribution captures the gain. That may well be right. But read what it concedes. The winner in that version is not the company that kept reasoning locked up and charged a premium for the lock. The savings do not flow to the scarcity. They flow to the layer that was actually defensible. Even the most bullish case for the buildout is a case against the premium. The money was always going to move to the moat. It was just never sitting where the price tag said it was.
+
+Which brings the two scenes back together. The half-trillion-dollar drop and the fresh graduate with a training cluster and no approval to wait on are the same story from opposite ends. The founder once compared buying all that compute to buying a piano for the house: you do it because you can afford it, and because people are eager to play. The piano was real, and it was not cheap; scarce compute still decided who got to sit down at all. But the piano was never the rare thing. What was rare was a room where a new graduate could play anything he wanted, on curiosity alone, before anyone could prove it would pay.
+
+So the next time you are told that something is a moat because it is expensive and hard to get, ask the smaller, harder question: is it hard to build, or hard to copy? The chips are hard to build. The room was hard to copy, and almost free to make. The market spent two years pricing the first and never learned to see the second. It probably still cannot. Somewhere another lab has bought its own piano and handed a young person the keys, and no one will know what that was worth until it costs someone else close to $600 billion to find out.
