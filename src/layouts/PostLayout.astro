@@ -1,8 +1,9 @@
 ---
 import type { CollectionEntry } from 'astro:content';
 import BaseLayout from './BaseLayout.astro';
+import EssayEnd from '../components/EssayEnd.astro';
 import { basePath } from '../lib/paths';
-import { formatDate, formatMinutes, getMinutesRead } from '../lib/content';
+import { formatDate, formatMinutes, getMinutesRead, getPublishedEssays, getRelated } from '../lib/content';
 
 interface Props {
   entry: CollectionEntry<'essays'>;
@@ -13,9 +14,21 @@ const { data } = entry;
 const metaParts = [formatDate(data.pubDate), data.category, formatMinutes(getMinutesRead(entry))].filter(Boolean);
 const tagText = data.tags.length ? data.tags.join(' · ') : undefined;
 const heroSrc = data.hero ? (data.hero.startsWith('http') ? data.hero : basePath(data.hero)) : undefined;
+
+const site = Astro.site ?? new URL('https://animesh.kundus.in');
+const canonical = new URL(Astro.url.pathname, site).toString();
+const ogImage = new URL(basePath(`og/${entry.id}.png`), site).toString();
+const related = getRelated(entry, await getPublishedEssays(), 3);
 ---
 
-<BaseLayout title={data.title} description={data.description}>
+<BaseLayout
+  title={data.title}
+  description={data.description}
+  ogType="article"
+  ogImage={ogImage}
+  publishedTime={data.pubDate.toISOString()}
+>
+  <div class="reading-progress" aria-hidden="true"><span class="reading-progress-bar"></span></div>
   <div class="post measure">
     <header>
       <h1 class="post-title">{data.title}</h1>
@@ -32,5 +45,35 @@ const heroSrc = data.hero ? (data.hero.startsWith('http') ? data.hero : basePath
     <article class="prose prose-lg">
       <slot />
     </article>
+    <EssayEnd related={related} shareUrl={canonical} shareTitle={data.title} />
   </div>
+
+  <script>
+    const bar = document.querySelector<HTMLElement>('.reading-progress-bar');
+    const article = document.querySelector<HTMLElement>('article.prose');
+    if (bar) {
+      const doc = document.documentElement;
+      const update = () => {
+        const viewport = doc.clientHeight;
+        // Complete when the article's end reaches the viewport bottom, so the
+        // bar tracks the read itself rather than the sign-off/footer below it.
+        const end = article ? article.offsetTop + article.offsetHeight - viewport : doc.scrollHeight - viewport;
+        const progress = end > 0 ? doc.scrollTop / end : doc.scrollTop > 0 ? 1 : 0;
+        bar.style.transform = `scaleX(${Math.min(1, Math.max(0, progress))})`;
+      };
+      let ticking = false;
+      const onScroll = () => {
+        if (!ticking) {
+          ticking = true;
+          requestAnimationFrame(() => {
+            update();
+            ticking = false;
+          });
+        }
+      };
+      update();
+      window.addEventListener('scroll', onScroll, { passive: true });
+      window.addEventListener('resize', update);
+    }
+  </script>
 </BaseLayout>

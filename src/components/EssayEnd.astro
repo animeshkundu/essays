@@ -1,0 +1,101 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import { basePath, postPath } from '../lib/paths';
+import { getMetaParts } from '../lib/content';
+
+interface Props {
+  related: CollectionEntry<'essays'>[];
+  shareUrl: string;
+  shareTitle: string;
+}
+
+const { related, shareUrl, shareTitle } = Astro.props;
+const homeHref = basePath();
+---
+
+<footer class="essay-end">
+  <div class="end-mark" aria-hidden="true">
+    <span class="end-rule"></span>
+    <span class="end-dot"></span>
+    <span class="end-rule"></span>
+  </div>
+
+  {related.length > 0 && (
+    <section class="read-next" aria-label="Read next">
+      <p class="kicker">Read next</p>
+      <ul>
+        {related.map((essay) => (
+          <li>
+            <a href={postPath(essay.id)}>{essay.data.title}</a>
+            <p class="meta">{getMetaParts(essay).slice(0, 3).join(' · ')}</p>
+          </li>
+        ))}
+      </ul>
+    </section>
+  )}
+
+  <div class="end-bar">
+    <a class="end-back" href={homeHref}><span aria-hidden="true">←</span> All essays</a>
+    <div class="share" data-share data-url={shareUrl} data-title={shareTitle}>
+      <button type="button" class="share-action" data-share-native hidden>Share</button>
+      <button type="button" class="share-action" data-share-copy>
+        <span data-copy-label>Copy link</span>
+      </button>
+      <span class="sr-only" role="status" aria-live="polite" data-copy-status></span>
+    </div>
+  </div>
+</footer>
+
+<script>
+  const root = document.querySelector<HTMLElement>('[data-share]');
+  if (root) {
+    const url = root.dataset.url || location.href;
+    const title = root.dataset.title || document.title;
+    const native = root.querySelector<HTMLButtonElement>('[data-share-native]');
+    const copy = root.querySelector<HTMLButtonElement>('[data-share-copy]');
+    const label = root.querySelector<HTMLElement>('[data-copy-label]');
+    const status = root.querySelector<HTMLElement>('[data-copy-status]');
+
+    if (native && typeof navigator.share === 'function') {
+      native.hidden = false;
+      native.addEventListener('click', () => {
+        navigator.share({ title, url }).catch(() => {});
+      });
+    }
+
+    if (copy && label) {
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      copy.addEventListener('click', async () => {
+        try {
+          if (navigator.clipboard?.writeText) {
+            await navigator.clipboard.writeText(url);
+          } else {
+            const ta = document.createElement('textarea');
+            ta.value = url;
+            ta.setAttribute('readonly', '');
+            ta.style.position = 'absolute';
+            ta.style.left = '-9999px';
+            document.body.appendChild(ta);
+            ta.select();
+            try {
+              if (!document.execCommand('copy')) throw new Error('copy command rejected');
+            } finally {
+              document.body.removeChild(ta);
+            }
+          }
+          label.textContent = 'Copied';
+          if (status) status.textContent = 'Link copied to clipboard';
+          copy.classList.add('is-copied');
+          clearTimeout(timer);
+          timer = setTimeout(() => {
+            label.textContent = 'Copy link';
+            if (status) status.textContent = '';
+            copy.classList.remove('is-copied');
+          }, 2000);
+        } catch {
+          if (status) status.textContent = 'Could not copy the link';
+        }
+      });
+    }
+  }
+</script>

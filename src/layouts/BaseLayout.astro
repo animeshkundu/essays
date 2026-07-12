@@ -6,17 +6,48 @@ import { basePath } from '../lib/paths';
 interface Props {
   title?: string;
   description?: string;
+  ogType?: 'website' | 'article';
+  ogImage?: string;
+  publishedTime?: string;
 }
 
 const siteTitle = 'Essays';
-const { title = siteTitle, description = 'Essays by Animesh Kundu.' } = Astro.props;
+const { title = siteTitle, description = 'Essays by Animesh Kundu.', ogType = 'website', ogImage, publishedTime } = Astro.props;
 const pageTitle = title === siteTitle ? siteTitle : `${title} · ${siteTitle}`;
-const canonical = new URL(Astro.url.pathname, Astro.site ?? 'https://animeshkundu.github.io').toString();
+const site = Astro.site ?? new URL('https://animesh.kundus.in');
+const canonical = new URL(Astro.url.pathname, site).toString();
+const resolvedOgImage = ogImage ?? new URL(basePath('og.png'), site).toString();
 const year = new Date().getUTCFullYear();
 const path = Astro.url.pathname;
 const aboutHref = basePath('about/');
+const tagsHref = basePath('tags/');
 const homeHref = basePath();
-const isAbout = path.endsWith('/about/') || path.endsWith('/about');
+const isAbout = path.startsWith(aboutHref);
+const isTags = path.startsWith(tagsHref);
+const isHome = !isAbout && !isTags;
+
+const jsonLd =
+  ogType === 'article'
+    ? {
+        '@context': 'https://schema.org',
+        '@type': 'BlogPosting',
+        headline: title,
+        description,
+        datePublished: publishedTime,
+        author: { '@type': 'Person', name: 'Animesh Kundu' },
+        publisher: { '@type': 'Person', name: 'Animesh Kundu' },
+        image: resolvedOgImage,
+        url: canonical,
+        mainEntityOfPage: canonical,
+      }
+    : {
+        '@context': 'https://schema.org',
+        '@type': 'WebSite',
+        name: siteTitle,
+        description,
+        url: canonical,
+        author: { '@type': 'Person', name: 'Animesh Kundu' },
+      };
 ---
 
 <!doctype html>
@@ -24,17 +55,41 @@ const isAbout = path.endsWith('/about/') || path.endsWith('/about');
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script is:inline>
+      (function () {
+        try {
+          var t = localStorage.getItem('theme');
+          if (t === 'dark' || t === 'light') document.documentElement.classList.add(t);
+        } catch (e) {}
+      })();
+    </script>
     <Font cssVariable="--font-serif" preload={[{ weight: '400', style: 'normal', subset: 'latin' }, { weight: '500', style: 'normal', subset: 'latin' }, { weight: '400', style: 'italic', subset: 'latin' }]} />
     <Font cssVariable="--font-sans" preload={[{ weight: '400', style: 'normal', subset: 'latin' }, { weight: '600', style: 'normal', subset: 'latin' }]} />
     <title>{pageTitle}</title>
     <meta name="description" content={description} />
     <link rel="canonical" href={canonical} />
     <link rel="icon" type="image/svg+xml" href={basePath('favicon.svg')} />
+    <link rel="apple-touch-icon" href={basePath('apple-touch-icon.png')} />
     <link rel="alternate" type="application/rss+xml" title="Essays" href={basePath('rss.xml')} />
+
+    <meta property="og:site_name" content={siteTitle} />
     <meta property="og:title" content={pageTitle} />
     <meta property="og:description" content={description} />
-    <meta property="og:type" content="website" />
+    <meta property="og:type" content={ogType} />
     <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={resolvedOgImage} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content={pageTitle} />
+    {ogType === 'article' && publishedTime && <meta property="article:published_time" content={publishedTime} />}
+    {ogType === 'article' && <meta property="article:author" content="Animesh Kundu" />}
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={pageTitle} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={resolvedOgImage} />
+
+    <script type="application/ld+json" is:inline set:html={JSON.stringify(jsonLd).replace(/</g, '\\u003c')} />
   </head>
   <body>
     <div class="site-shell">
@@ -42,8 +97,18 @@ const isAbout = path.endsWith('/about/') || path.endsWith('/about');
         <nav class="site-nav">
           <a class="wordmark" href={homeHref}>Animesh Kundu</a>
           <div class="nav-links">
-            <a href={homeHref} aria-current={!isAbout ? 'page' : undefined}>Essays</a>
+            <a href={homeHref} aria-current={isHome ? 'page' : undefined}>Essays</a>
+            <a href={tagsHref} aria-current={isTags ? 'page' : undefined}>Tags</a>
             <a href={aboutHref} aria-current={isAbout ? 'page' : undefined}>About</a>
+            <button type="button" class="theme-toggle" data-theme-toggle aria-label="Toggle dark mode" aria-pressed="false">
+              <svg class="theme-icon moon" viewBox="0 0 24 24" width="17" height="17" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 14.5A8 8 0 1 1 9.5 4a6.2 6.2 0 0 0 10.5 10.5Z" />
+              </svg>
+              <svg class="theme-icon sun" viewBox="0 0 24 24" width="17" height="17" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="4" />
+                <path d="M12 2.5v2M12 19.5v2M4.5 12h-2M21.5 12h-2M6 6l-1.4-1.4M19.4 19.4 18 18M18 6l1.4-1.4M4.6 19.4 6 18" />
+              </svg>
+            </button>
           </div>
         </nav>
       </header>
@@ -54,5 +119,26 @@ const isAbout = path.endsWith('/about/') || path.endsWith('/about');
         <span>{year} · Animesh Kundu</span>
       </footer>
     </div>
+
+    <script>
+      const btn = document.querySelector<HTMLButtonElement>('[data-theme-toggle]');
+      if (btn) {
+        const root = document.documentElement;
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)');
+        const isDark = () =>
+          root.classList.contains('dark') || (!root.classList.contains('light') && prefersDark.matches);
+        const sync = () => btn.setAttribute('aria-pressed', String(isDark()));
+        sync();
+        btn.addEventListener('click', () => {
+          const next = isDark() ? 'light' : 'dark';
+          root.classList.remove('light', 'dark');
+          root.classList.add(next);
+          try {
+            localStorage.setItem('theme', next);
+          } catch (e) {}
+          sync();
+        });
+      }
+    </script>
   </body>
 </html>

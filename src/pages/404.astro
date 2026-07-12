@@ -1,0 +1,13 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { basePath } from '../lib/paths';
+---
+
+<BaseLayout title="Page not found" description="This page wandered off.">
+  <section class="page measure">
+    <p class="kicker">404</p>
+    <h1>This page wandered off.</h1>
+    <p class="home-intro">The link may be old, or the page may never have existed. Either way, there is better reading a step back.</p>
+    <p class="not-found-back"><a href={basePath()}>Back to the essays</a></p>
+  </section>
+</BaseLayout>

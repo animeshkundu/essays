@@ -41,6 +41,17 @@
   --color-line: #3A3228;
 }
 
+/* Explicit light choice — overrides the prefers-color-scheme default when a
+   reader on a dark-default OS opts back into the paper art-direction. */
+.light {
+  color-scheme: light;
+  --color-paper: #F7F3EC;
+  --color-ink: #1B1B18;
+  --color-muted: #6B6459;
+  --color-accent: #A8462E;
+  --color-line: #E4DCCB;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -81,6 +92,12 @@ a {
 a:hover {
   color: var(--color-accent);
   text-decoration-color: currentColor;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 3px;
+  border-radius: 2px;
 }
 
 h1,
@@ -497,4 +514,198 @@ img {
     margin-left: 0;
     transform: none;
   }
+}
+
+/* Theme toggle — a quiet icon button in the nav. */
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  margin-left: 0.1rem;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-muted);
+  cursor: pointer;
+  transition: color 160ms ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.theme-toggle:hover {
+  color: var(--color-accent);
+}
+
+.theme-icon {
+  display: block;
+}
+
+/* Show the icon for the theme the reader can switch TO. */
+.theme-toggle .sun {
+  display: none;
+}
+.theme-toggle .moon {
+  display: block;
+}
+@media (prefers-color-scheme: dark) {
+  .theme-toggle .sun {
+    display: block;
+  }
+  .theme-toggle .moon {
+    display: none;
+  }
+}
+.dark .theme-toggle .sun {
+  display: block;
+}
+.dark .theme-toggle .moon {
+  display: none;
+}
+.light .theme-toggle .sun {
+  display: none;
+}
+.light .theme-toggle .moon {
+  display: block;
+}
+
+/* Reading progress — a thin accent bar pinned to the top of essay pages. */
+.reading-progress {
+  position: fixed;
+  inset: 0 0 auto 0;
+  height: 2px;
+  z-index: 50;
+  pointer-events: none;
+}
+
+.reading-progress-bar {
+  display: block;
+  height: 100%;
+  width: 100%;
+  background: var(--color-accent);
+  transform: scaleX(0);
+  transform-origin: left center;
+  will-change: transform;
+}
+
+/* End of essay — sign-off mark, read-next, and a quiet share row. */
+.essay-end {
+  margin-top: clamp(3.5rem, 8vw, 5.5rem);
+}
+
+.end-mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.9rem;
+  margin-bottom: clamp(2.5rem, 6vw, 4rem);
+}
+
+.end-rule {
+  display: block;
+  width: 1.75rem;
+  height: 1px;
+  background: var(--color-line);
+}
+
+.end-dot {
+  display: block;
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  background: var(--color-accent);
+}
+
+.read-next {
+  padding-top: clamp(2rem, 4vw, 2.75rem);
+  border-top: 1px solid var(--color-line);
+}
+
+.read-next .kicker {
+  margin-bottom: 1.35rem;
+}
+
+.read-next ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.read-next li a {
+  font-family: var(--font-serif);
+  font-size: clamp(1.35rem, 2.2vw, 1.7rem);
+  line-height: 1.2;
+  letter-spacing: -0.015em;
+  text-decoration: none;
+}
+
+.read-next li .meta {
+  margin-top: 0.4rem;
+}
+
+.end-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: clamp(2.5rem, 5vw, 3.5rem);
+  padding-top: 1.4rem;
+  border-top: 1px solid var(--color-line);
+  font-family: var(--font-sans);
+  font-size: 0.8125rem;
+  letter-spacing: 0.01em;
+}
+
+.end-back {
+  color: var(--color-muted);
+  text-decoration: none;
+}
+
+.end-back:hover {
+  color: var(--color-accent);
+}
+
+.share {
+  display: flex;
+  align-items: center;
+  gap: 1.15rem;
+}
+
+.share-action {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-muted);
+  font-family: var(--font-sans);
+  font-size: 0.8125rem;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition: color 160ms ease;
+}
+
+.share-action:hover,
+.share-action.is-copied {
+  color: var(--color-accent);
+}
+
+.not-found-back {
+  margin-top: 2.75rem;
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
