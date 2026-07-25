@@ -1,0 +1,63 @@
+---
+pubDate: 2026-07-25
+title: "Easy to Write, Expensive to Read"
+description: "AI-assisted security reports can find real bugs, but curl's overloaded inbox shows the new bottleneck: scarce human judgment deciding which fluent claim deserves time."
+category: essay
+tags: ["ai", "open-source", "security", "software"]
+slug: easy-to-write-expensive-to-read
+minutesRead: 7
+
+---
+
+A security report now takes seconds to write and hours to answer. That gap is the whole story.
+
+Picture the person on the receiving end. He founded curl, a small open source program, almost thirty years ago, and still leads it. It runs on perhaps thirty billion devices, by the project's own estimate. Phones, cars, printers, game consoles, the quiet plumbing under a lot of your day. By May 2026 he was spending nearly all his working days on one list of incoming security reports, deciding which polished claim was real. The reports came in faster than one a day, four to five times the rate of two years before. For the first time in his life, he wrote, his wife voiced concern about his hours.
+
+Here is the claim, and you are allowed to resist it. The first scarce skill in AI-assisted software is not writing code faster, and not finding bugs faster. It is deciding which cheap, fluent, machine-shaped request deserves a real person's time. Cheap generation did not shrink the work. It moved the work to the one place that cannot be copied: a human deciding what is worth looking at.
+
+What follows are the things that keep following from that, and refuse to go away.
+
+<PullQuote>
+The queue is not made of bugs. It is made of requests for judgment.
+</PullQuote>
+
+**1. The queue is not made of bugs. It is made of requests for judgment.**
+Every report, true or not, needs a person to read it and decide what it means. That decision is the product. The bug, if there is one, comes after.
+
+**2. Polish is a cost, not a courtesy.**
+A wrong report that looks right takes longer to throw away than one that looks wrong. In December 2023 the maintainer opened a tidy report of a buffer overflow. Proper English, a proposed fix, a claim of remote code execution. Nineteen minutes later he had read the code three times, asking where exactly the overflow happened. Only then could he write the plain sentence: there was no buffer overflow. The better a false report looks, the more of your afternoon it takes to disagree with it.
+
+**3. Making one side of a task cheap makes the other side heavier.**
+This is the part people have backward. When the cost of producing a report fell to almost nothing, the number of reports did not fall with it. It climbed. The easy half got easier. The hard half, the reading and the deciding, got bigger. A tool that saves the sender's time can spend the receiver's.
+
+**4. The slop was the easy problem.**
+Easy meaning easier to sort, never cheap to handle. Even an obvious junk report pulled in three or four people on the security team, thirty minutes to three hours each, out of volunteers who might have three hours a week to give. Then the junk got good. By April 2026 the share of reports that turned out real had climbed back to fifteen or sixteen percent, close to the old pre-AI normal, and almost every report seemed to lean on AI for something. More real findings, more volume, more claims that had to be checked by hand. He called it high quality chaos, which is worse than the low quality kind, because you cannot skim it.
+
+**5. Removing the reward did not fix it. Neither did switching the platform.**
+The project shut its bug bounty at the end of January 2026, after nearly seven years and more than a hundred thousand dollars paid out. The theory was that money drew the noise. For a while the inflow did drop, though no one could say whether that was the missing reward, the moment of change, or reporters not yet finding the new door. Within months the volume was back, and higher, just better dressed. So the reward was not the whole engine. Intake moved too: off HackerOne, onto GitHub's private reporting, and back again inside two months. The bounty did not return, but the workflow mattered. GitHub mailed the whole report with no way to turn it off and could not disclose invalid reports. It offered no label to mark a thing as slop for later. Those are survival tools for a small team, the way it keeps a dozen live problems straight without going under. The platform was real work. It just never touched the bottleneck. When the scarce thing is the security team's attention, you cannot buy it back by moving where the attention gets spent.
+
+**6. And yet the machines do find real bugs. That is the honest part.**
+Give the other side its strongest case, because the record hands it over. AI-assisted tools drove somewhere between two and three hundred merged fixes into curl in under a year, a dozen or more of them genuine, published vulnerabilities. A separate agent found a real memory bug in a widely used database and it was patched the same day, before any release carried it to a single user. Cheap search really can turn into real evidence. Sometimes it does.
+
+**7. But finding a bug and helping fix one are different jobs, and only one of them scales.**
+A scanner once flagged five findings it labeled confirmed security vulnerabilities. After hours of human review, one held up as real, three were documented behavior working as intended, and one was an ordinary bug, not a security problem. The machine multiplied the finding. It could not do the deciding. Whether the extra real bugs are worth the extra hours, for a project with no paid triage team, is genuinely unsettled. Both halves are true at once: more gets found, and more must be judged by hand.
+
+**8. A reproducer is the only real gift a stranger can send.**
+It turns a paragraph into a thing you can run. The rest of a fluent report, the impact section, the severity score, the confident prose, is a promise the maintainer still has to keep for you. Send a script that trips the bug and you have saved him work. Send five polished pages without one and you have simply mailed him the work instead.
+
+**9. Severity is a person, not a field.**
+This project throws out the industry's scoring formula and grades by hand. How hard to trigger, on which platforms, under which build, to what actual end. A report can be true, reproducible, and still not a security problem, because it targets a test server, or documented behavior, or an attack nobody could really run. In these cases the model did not close that gap. A tired human did, one report at a time.
+
+**10. When judgment is the scarce good, the filter grows back by hand.**
+Watch what maintainers build once deleting stops being cheap. Vouch systems that auto-close anyone unknown. Bots that reject a contribution for touching too many files. Shorter disclosure windows. Whole projects that now read a stranger's submission first as a question about the stranger, and only then as code: are you really trying to help me, or just help yourself? The old friction that used to prove a person had done the work is gone, so projects are building it back by hand. None of it is red tape for its own sake. The labels, the disclosure paths, the severity rules, the demand for a reproducer. That machinery is the reason a few tired people stay upright under the load.
+
+**11. The clearest picture of the new job is one bad pull request.**
+Twelve hundred lines of confident, machine-written hardening, spread across a dozen parts of an emulator, sent by someone who later admitted he had not known it was submitted at all. A maintainer closed it as not reviewable. Later, two small fixes were pulled out of that dump into their own pull request and merged: a bounds check, and a one-character change, a single number bumped to the next. That is the shape of the work now. Not writing the fix. Finding it in the flood.
+
+He keeps the list moving because a backlog of maybe-vulnerabilities he does not control, he wrote, takes a mental toll. And he means the good part too: every real report is a bug fixed, a better program. Believe him. Then read the ledger. With half a release cycle left, the project already held twelve confirmed vulnerabilities waiting, a record, on track to publish more in half a year than in the two previous years combined.
+
+<PullQuote>
+We made the asking free. We never made the deciding any cheaper.
+</PullQuote>
+
+The tools got faster at everything except the part that was always the bottleneck. We made the asking free. We never made the deciding any cheaper. So there is still one person at the end of a chain that reaches, by the project's own estimate, perhaps thirty billion devices, opening one more long, careful, well-argued report, to answer the only question fluency cannot: is this true?
