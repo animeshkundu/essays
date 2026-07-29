@@ -1,0 +1,82 @@
+---
+pubDate: 2026-07-29
+title: "The Last Person Who Could Say"
+description: "Parallel coding agents promise speed, but the new work of tending many worktrees at once shifts the cost from typing code to understanding, reviewing, and owning what runs without you."
+category: essay
+tags: ["ai", "software", "programming", "agents", "worktrees"]
+slug: the-last-person-who-could-say
+minutesRead: 10
+
+
+
+---
+
+On July 19, 2026, a software developer posted a short note on Hacker News to explain a thing he had made. He was not selling a model or a breakthrough. He had a smaller problem, and it is the more interesting one, because it is not the problem everyone else was arguing about.
+
+Over the previous few months, he wrote, more and more of his work had turned into "using coding agents instead of typing the whole code myself." Usually a few sessions at once, one per feature or per revealed bug. He ran them side by side in a split terminal for a few weeks. Then he hit the thing that made him stop and build something.
+
+He could not tell which agent was stuck waiting on him and which was still working.
+
+So he cycled through them. Pane to pane, checking. Is this one still working, or is it done and quietly waiting for him? Worse, two of them were sharing one branch and had started editing the same file with different ideas, which he called, drily, "a nice recipe for a mess." Notice what his first problem was. Not that the code was wrong. That he could no longer tell which of his workers needed him. What had broken was his attention.
+
+What he built to fix it is a desktop app that puts the agents in a grid, each one in its own Git worktree: the same repository, separate working directories, so they can all run at once without touching each other's edits. A real terminal behind each one. And a notification that lands him straight in whichever agent needs him, so no room sits stuck and silent while he looks the other way. A screenshot of it shows four agents going at the same time, labeled like a to-do list someone else is working through: deploy workflow, holiday sync, timezone fix, dependency upgrade. Three of them say online. The fourth says awaiting input. It has stopped to ask him, in a little menu, "Which of these would you like me to do next?"
+
+Look at what the tool is for. It does not make the agents write better code. It answers a smaller and stranger question: which room needs me right now.
+
+<PullQuote>
+Running several workers you did not write costs you more ownership than their speed gives back.
+</PullQuote>
+
+The comfortable story about this moment is that the developer is moving up in the world. He used to be a typist; now he is a manager. He used to write one function at a time; now he runs a small staff. I think the opposite is closer to the truth. Running several workers you did not write costs you more ownership than their speed gives back. The scarce thing was never how fast you type. It was how much you understand, and understanding is exactly what you skip when you are tending several rooms at once.
+
+That is a minority view, and I want to argue it honestly, which means first making the other side as strong as it deserves to be.
+
+## The good version, at full strength
+
+The strongest case for all this is not that machines can write code, so people matter less. It is an old software story wearing new clothes. Every real tool moves ownership up a level. A compiler turns your source into machine instructions you will never read, and you stopped caring, because you own the source now, not the assembly. Continuous integration took the pile of strange commands nobody wanted to remember and made them rules in a file; teams stopped owning each keystroke and started owning the checks. Cloud tools let you describe a whole fleet of servers in a document instead of racking metal. Each time, the thing you personally touched moved further from the machine and closer to the intent. In the best version of the agent story, the same thing happens again. You give up the typing. You keep the spec, the tests, the review, the taste, and the decision to merge. You become the editor, not the stenographer.
+
+The worktree itself makes the point. It is not an artifact of the AI age at all. Git added it in version 2.5, and the examples in its own manual are human and small: you are in the middle of a messy refactor, files half-moved, and your boss walks in demanding an urgent fix, so you spin up a second working directory, fix the thing there, and leave your mess undisturbed. A worktree was always a way to hold two thoughts at once without letting them smear together. What is new is only how many thoughts, and whose.
+
+And when it works, it really works. In May 2026 one engineer set out to rewrite a widely used JavaScript runtime, more than half a million lines of it, from one language into another. By hand that would have frozen a small team for a year, with every bug fix and security patch on hold the whole time. He pointed dozens of agent workflows at it instead and let them run. Two minutes into the first attempt, one agent ran a stash, another popped it, then a hard reset wiped the tree, and the whole thing collapsed into itself. "They were stepping on each other!" So he gave each shard of the work its own worktree. At the peak, about sixty-four agents were running at once across four of them. Eleven days later the test suite passed on all six platforms it had to support.
+
+That is the good version, and it is not a trick. The worktree did in 2026 exactly what it was designed to do in 2015. It kept separate thoughts from smearing. It just held sixty-four of them.
+
+## What it actually cost to keep it
+
+Now look at what that same engineer did to hold on to ownership while the agents ran. Every line the machines produced was read by two separate adversarial reviewers whose job was to assume the code was wrong. They earned their keep: they caught a use-after-free in code that compiled cleanly and read like something a careful person would write. The new code had to match an enormous conformance suite exactly. One human sat on top of all of it, watching closely, the whole time. The token bill came to roughly a hundred and sixty-five thousand dollars.
+
+That is the price of moving ownership up a level, and it is enormous, and it is why the rewrite is a great story rather than a common one. The case proves that ownership can move up. It does not prove that it usually does.
+
+Because the older abstractions had a quiet property this one lacks. A compiler is deterministic. Give it the same input and it gives you back the same output, every time, and that is precisely why you were allowed to stop reading the assembly: the layer beneath you did not surprise you. An agent is not like that. It will not do the same thing twice, and when it is wrong it tends to be wrong in the worst possible way, in code that compiles, reads well, and slips past whatever checks you thought to write. You cannot trust it the way you trust a compiler, so you cannot stop understanding the way you stopped understanding assembly. As one language designer put it, code is a precise statement of a solution, and "English is a lousy language for expressing things that have to be unambiguous." Your instruction went up a level. The precision did not come with it.
+
+This is the crack the comfortable story papers over. A systems programmer writing that same summer put his finger on it. The real limit on large software, he argued, was never how fast any one person could produce code. It is shared understanding: what the system is for, where its edges are, why it has the shape it has. That understanding used to live partly in the friction we were all so glad to lose, in the review, the argument, the having to explain your change to a person who would have to live with it. Agents let you act in parts of a system you do not understand, and where you would once have needed another human to move at all, now you need no one. His flattest line is the one worth keeping: construction can continue after shared understanding has collapsed. The building keeps going up. It is just that fewer and fewer of the people on site can tell you why it stands.
+
+## The thing the grid cannot do
+
+This is why the developer's first pain was attention, not quality. Quality is a problem you find out about later, in the diff, in review, in production, long after the moment has passed. Attention is a problem you feel right now, cycling through panes trying to find the one that stopped. His grid is a real answer to that. The notifications, the status boards elsewhere that sort your workers into what is working, what needs you, and what is done: all of it helps you find the room that needs you, faster. But finding the room and understanding what happened inside it are two different jobs. The tools have gotten very good at the first. None of them touch the second.
+
+Look at the numbers. In the 2025 survey, more than eight in ten developers were using these tools or planning to. Asked whether they trusted the accuracy of what the tools produced, about a third said yes. Almost half said no. Three percent trusted it a lot. People had rebuilt their working days around a thing most of them did not fully believe. And only seventeen percent said agents had made their team collaborate better, which is a polite survey number for a lonelier fact: the work is turning into one person and their machines, not people and each other.
+
+Watch where the ownership goes once the code is cheap. As one industry writer put it in late July, code may now be nearly free, but validating it is not. An agent changes hundreds of lines in an instant and hands you a diff to approve or rubber-stamp, and the plain rule underneath still holds: the person who pushes the commit owns the code, and the person who approves the pull request owns the approval. Ownership did not disappear. It got quietly reassigned to whoever clicks last, whether or not that person understood what they were clicking.
+
+And we know what happens to a person asked to click all day. The company behind one of these agents looked at its own telemetry and found that when it asked permission at every step, users approved about ninety-three percent of the prompts. Its own honest conclusion: the more approvals people see, the less attention they pay. Then comes the warning that should be printed on the box. As users move to running many agents at once, catching a mistake by noticing the agent go wrong in the moment becomes much less likely to work. The safety rail is a click, and the click is getting faster, and there are four of them now, and then eight.
+
+<PullQuote>
+Divided attention is not a side effect of this work. It is the work.
+</PullQuote>
+
+Even the researchers trying to measure whether any of this makes people faster ran into the same wall from the other side. One group set out to time experienced developers with and without AI, and the measurement itself fell apart, for a reason that gives the whole game away: the developers kept starting some other task while they waited for an agent to finish, so no one could say cleanly how long anything had taken. Divided attention is not a side effect of this work. It is the work.
+
+## Coming back to the desk
+
+There is a scene that keeps turning up in the first-person accounts, and it has nothing to do with speed. A well-known open-source developer described leaving his desk for a household errand and coming back to watch his own computer work. In the few minutes he was gone it had opened one browser, then a second, written throwaway web pages to reproduce a bug, taken screenshots of itself, stood up a little local server to gather measurements, and taught the page to press a key on its own a second and a fraction after loading. All to chase a stray scrollbar whose real fix was two lines. He was not debugging so much as watching his own machine, trying to reconstruct, after the fact, what it had done while he was in the other room. That is the shape of the day this is becoming. You return to work that is already finished and try to work out what it was.
+
+None of this makes the agents bad or the speed fake. The runtime rewrite was real. An hour of an agent building a small typing game for someone's daughter, checking its own work in a browser, while the parent supplies the one thing the machine has no way to supply, the taste, the unlockable cat costumes, the login that only a grown-up controls: that is real too, and worth having. The people keeping full ownership are doing something specific and expensive and they know precisely what it costs them. The danger is not for them. It is for everyone who will get the speed without paying that price and will not see the bill until it arrives, because the missing understanding is invisible right up to the moment the thing breaks in a way nobody left on the team can explain.
+
+Another developer, asked why she was slow to hand her work to these tools, said she was faster in her old editor because "my fingers know what to do." The tool had become part of her hand. The new ones produce work the hand never touched, work that shows up finished and has to be read cold. The body moves from typing to reviewing, from making a thing to vouching for a thing someone else made in a language nobody speaks precisely.
+
+So go back to the developer and his grid of rooms. He built something good, and you can see why he needed it. Three of the four agents are working. The fourth has paused to ask which thing he wants next.
+
+He will answer. It will go back to work. The others never stopped.
+
+He is the only person who could say whether any of it is right. Whatever those rooms finish, he is the one who will have to read it, and vouch for it, and answer for it when it breaks. He gave up the typing, and he was glad to. Nobody told him what else was leaving with it.
