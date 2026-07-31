@@ -1,0 +1,60 @@
+---
+pubDate: 2026-07-31
+title: "After It Works"
+description: "AI lets non-engineers ship internal tools before they can own the failure cases. The safer answer is not a blanket ban, but software ownership as workplace literacy."
+category: essay
+tags: ["ai", "software", "work", "internal-tools", "shadow-it"]
+slug: after-it-works
+minutesRead: 8
+
+---
+
+**1. A working tool is the most dangerous thing in the building.**
+A director who is not an engineer sat down with ChatGPT and Claude and shipped a handful of web apps, some Python scripts, and an Android app on Supabase with real users on it. Then he wrote a note to strangers online. He can build things, he said, but "there are big holes underneath it." He can "usually get something working without really knowing why it works, whether it's actually well built, or what's going to break down the road once it gets more complex." The man is describing a success.
+
+**2. A first working tool was never the whole hard part. The syntax only used to hide the rest.**
+For decades a notation, a platform's rules, or plain syntax was the toll booth. You paid in semicolons and stack traces, or in formulas and macros, before anyone else could lean on what you made, and the paying taught you a little about the thing itself. AI took the booth out. One founder selling these tools said it without flinching: "the building aspect is already commoditized." He is right about the first version and wrong about the rest. Getting an internal tool to run was always the cheap part of owning it. The booth moved. The hard part stayed exactly where it was.
+
+**3. The order of learning flipped, and nobody told the learner.**
+The old beginner learned a notation, then shipped. The new beginner ships, then finds out there was something to learn. He finds out in the order that costs the most: real users first, understanding later, if at all.
+
+<PullQuote>
+"It works" is a claim about today. Owning it is a claim about every day after.
+</PullQuote>
+
+**4. "It works" is a claim about today. Owning it is a claim about every day after.**
+An electrician can wire an outlet that turns on the first time and every time you look at it. Whether it starts a fire at two in the morning a year from now is a different skill, and the outlet will not tell you which kind of electrician you hired. "It works" is the reading you can see. The other reading takes months to show up.
+
+**5. The floor he can feel missing is the best instrument he owns.**
+His unease is not nerves. The replies confirmed it, part by part: AI-built apps "rot fastest" in the plumbing you cannot see, the data models and the schemas; testing is "probably the single most important thing" precisely because you did not write the code by hand. He is not underrating himself. He is calibrated. The fear is accurate.
+
+**6. The industry is moving that fear into the platform, and that is the real danger.**
+Platforms now wrap the new builder in guardrails: scoped roles, audit logs, deny-by-default networks, a checklist where a Publish button used to be. Asked where the safety should live, senior technology leaders leaned hard one way: 55 percent wanted security and access controls in a central platform underneath the app, and 7 percent wanted them set by the person building it. The vote is defensible. It is also, without anyone intending it, a vote to make the builder's own unease optional. When the checklist turns green, the maker can stop asking what safe means and trust that the platform already did. A guardrail you cannot feel is one you stop consulting.
+
+**7. A guardrail can know the boundary. It cannot know the business.**
+The platform can stop a tool from reaching data it should not touch. It cannot know that the threshold is stale, that the rule changed last quarter, that this row was never meant to be visible to this person. In the launch that set off half these arguments, a data scientist pasted in a personal fraud model "with hardcoded thresholds and all," and after a few prompts the thresholds were live controls in a company risk console. The founders had gotten off a call with that customer earlier the same day, and "most of their company" was already using it. The launch post is not a failure story. That is the point. The judgment was real, it now has a sign-in screen, and the ownership question has moved from a personal notebook to a company console.
+
+**8. When anyone can ship in an afternoon, the tool belongs to no one.**
+A technical executive put it plainly: "When anyone can ship a tool in an afternoon, nobody signs up to maintain it." The labor used to make ownership hard to ignore. Remove the labor and the ownership does not move to someone else. It goes missing. The numbers describe that absence. Among senior technology and security leaders, only 5 percent were very confident they could even see all the internal tools running in production, and 22 percent had already traced a production incident to an AI-generated internal tool. Another 51 percent could not say for certain whether they had, and 8 percent were not tracking it at all. The failure here is rarely a smoking wreck. It is the not knowing.
+
+**9. The most honest description of the risk is a time of night.**
+A security officer described how these tools are born: in minutes, not looking like systems to the people making them, "data moving through a prompt, an API call, a quick script someone pasted together at 10pm. It works. It ships. Nobody logs it anywhere." Then the line that should stop any manager reading this: "By the time you know something has been built and is being used, you're already too late."
+
+**10. The restrictors are right about the path and wrong about the idea.**
+The tempting rule is simple: no non-engineer ships to production. Take the strong version of it seriously, because at its best it is not fear, it is duty of care. A tool that touches payroll, payments, medical records, legal records, customer identities, fraud decisions, hiring, or financial reporting should not reach daily use without review, tests, logging, a rollback path, and a named owner. Gate that. Gate the live data, the sensitive connectors, the production writes, the automation that reaches across systems. And gate them early, because the real crossing is not the Publish button. It is the first time production data flows in, and the first time a second person starts trusting the result. What you cannot gate is the need itself. The founders building for this market already describe what a blanket ban is up against: a worker uses a coding agent, deploys on a personal account, and drops the URL in Slack, a setup that, as one of them said, "works until someone pastes a prod key into an env var." You cannot forbid a workflow that already happened. You can only decide whether the next one happens in the light.
+
+**11. We have run this experiment before. We called it the spreadsheet.**
+Office workers have shipped production software for decades. It just had rows and columns. Audits keep finding important errors in the large majority of operational spreadsheets, built by people who were sure theirs was fine. A spreadsheet is a real programming environment that refuses to admit it is one, which is how so many became, in one researcher's phrase, "accidental legacy systems." No one has yet produced a verified public disaster caused by a non-engineer's AI-built internal tool. The honest reading is not that the danger is imagined. We already know its shape from last time, and the new tool makes the same bargain with a faster build step and a wider blast radius.
+
+**12. The bill for an internal tool is often paid by someone who never opened it.**
+A hidden tab in one spreadsheet once exposed the personal information of every serving officer and civilian staffer in a police force, 9,483 people. Some moved house. Some cut off family. Some kept checking under their cars. No AI wrote that file, which is exactly why it belongs here. The point is not the technology. A thing built quietly for internal use can reach straight into the lives of people who never knew it existed. "It's only internal" describes who is allowed in. It says nothing about what the file can do once it gets out.
+
+**13. The new literacy is ownership, and it starts where the demo ends.**
+Teaching everyone to code was the last decade's slogan, and it is nearly spent. The scarce skill is the one the director asked for by name: what to learn properly, what to learn just enough to supervise, what can honestly stay the machine's job. It is unglamorous and specific. It looks like knowing who owns the tool, whether it has tests, whether there is a way to undo it, who gets the call when it breaks at night, and which rows it will show a given person. None of that is a certificate. It is the plain difference between a thing that runs and a thing someone can stand behind.
+
+**14. So ask for the failure case.**
+Ask what happens when the input is wrong, when two people save at once, when the rule changes, when the person who built it leaves. A working demo answers none of those. If the only answer you get is that it runs, you have your answer.
+
+The director signed off with three questions and no answers, which is more honest than most of the industry selling to him: what to learn deeply, what to learn just enough to watch over, what to hand off for good. The replies gave him the real shape of an answer, the same one every engineer eventually learns: data modeling, security, testing, architecture, reading code, judging quality. No one can exempt him from that sorting. He worries the material will be stale in months; one replier told him that fear is mostly marketing, because the fundamentals do not move.
+
+What is left is smaller and harder than his three questions. He built an Android app on Supabase with real people on it, and he still cannot say why it works. He is the only one in the whole arrangement who can feel that. Being able to feel it is not the same as being safe. It is only the last moment before no one feels it at all.
