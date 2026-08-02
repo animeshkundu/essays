@@ -1,0 +1,66 @@
+---
+pubDate: 2026-08-02
+title: "The Spreadsheet Was Always Software"
+description: "AI coding's real shift may be governed amateur software: private notebooks and spreadsheets moving into scoped, logged internal tools."
+category: essay
+tags: ["ai", "internal-tools", "spreadsheets", "governance", "software"]
+slug: the-spreadsheet-was-always-software
+minutesRead: 9
+
+---
+
+At a company the founders did not name, a data scientist had a notebook he ran to catch fraud. It was his, a personal thing. The numbers that mattered most, the thresholds that decided which cases looked like fraud, were typed straight into the code, the way you write a phone number on the back of your hand. For as long as it mattered, a real piece of how the company told a clean case from a suspect one lived in one person's notebook, and nowhere anyone else could reach.
+
+He pasted that notebook into a new tool and typed a few sentences about what he wanted. After a few prompts he had an actual application: a risk console, connected to the company's data, sitting behind the company's login. The buried thresholds had become controls on a screen other people could see and use. The two founders of the tool said that after a call with the customer, most of the company was using it.
+
+It is tempting to read that as a story about a machine that can finally write software. That is the boring reading, and it is mostly wrong.
+
+Notice what did not happen. The data scientist did not turn into an app engineer, and he did not wait for the engineering backlog to reach him. The software was not conjured out of nothing. It already existed. It had been running for who knows how long, in the worst possible place: a private file only its author really understood. What changed was not that software appeared. What changed was who could see it, and what it was allowed to touch.
+
+That distinction is the whole argument.
+
+The story most people want to tell about AI and code is a story about speed. The programmers get faster. Then the non-programmers get to build things too, and we all start worrying about a flood of amateurs shipping junk. Both halves are true, and neither is the news. The founders of the tool in that fraud story say the building part is becoming "table stakes." Getting a chatbot to generate a working app is turning into the ordinary part, the part a company can just assume it has. It was never the interesting problem.
+
+The interesting one is older and quieter. People with no engineering title have been building the software that runs companies for almost fifty years, and we keep pretending they haven't.
+
+The spreadsheet was born, in 1978 and 1979, as a tool for exactly this person: someone with a business problem and no programming shop to send it to. The first real version shipped in the fall of 1979 as a brown vinyl binder holding a manual, a reference card, and a diskette. From then on a person could build a working system before anyone thought to call it an application. The data teams got their own version later. The notebook did for analysts what the spreadsheet did for accountants: it put code, numbers, and prose in one shareable file that mixed the work and the thinking together. Starting in 2017, one large streaming company began pulling the notebook out of the corner and treating it as a first-class tool, moving all ten thousand of its scheduled data jobs onto notebook-based execution, while naming the trouble with them out loud: notebooks change constantly, their output need not match their code, and they are hard to test.
+
+None of this is fringe. In a 2023 survey of more than two thousand developers and technical leads, almost half said they use a spreadsheet to manage at least one internal process. To manage it, not just store it.
+
+And here is the part we work hard not to look at. This private layer is not only widespread. It is load-bearing, and it breaks.
+
+In October 2020, England's public health agency lost nearly 16,000 positive covid results for a week. Not to a hacker. To a row limit. The results were flowing into an old spreadsheet format that quietly stopped accepting new rows once it filled, and every case past the limit simply never arrived. When auditors go looking, the pattern holds. Of 113 real spreadsheets that researchers actually opened and checked, going back to 1995, 88 percent had errors. In one 2007 audit of 25 working spreadsheets, the ten whose mistakes could be priced all had errors above one hundred thousand dollars. Six were above ten million. One passed a hundred million.
+
+Then there is the man at the bank. In 2012, one of the largest banks in America lost at least 6.2 billion dollars on a single trading strategy. Part of how the risk grew that large without anyone stopping it: the person responsible for measuring that risk was typing the trading data into spreadsheets by hand, for hours, every trading day, because he had never been given the money to build a system that would do it for him. The faulty numbers that came out the other side went unnoticed for months.
+
+Put the two pictures side by side. On one side, a fraud notebook promoted into a shared console on a platform that puts it behind a company login, gives it a narrow database role, and logs what it touches. On the other, a bank's risk model held together by a man typing figures into cells by hand until the loss reached ten digits. The second picture is what "just leave it private" actually looks like.
+
+So the shift worth caring about has little to do with software getting easier to write. The real change is that the private version can now be born with a shape. The moment a private notebook becomes a tool on a platform like this one, it can arrive with a login, its own narrow slice of the database, a record of who ran it and what it touched, and a place other people can find it. That is the real event. Governed amateur software is not a new swamp of unowned code. It is the overdue cure for work that was trapped in private files the whole time.
+
+I think that is right, and I also think it is the kind of claim that gets you into a fight with people who know more about security than I do. So let me give their side its full weight, because their side is strong.
+
+The objection is simple: this is shadow IT with a login. A nicer interface on the same old mess.
+
+Making software easier to build does not make it safe. A wrong notebook in one person's hands is wrong once. A wrong app published to the whole company is wrong everywhere at once, with the company's name and the company's data behind it. The hard part of software was never the typing. It was the data model, the access rules, the tests, the question of who owns the thing at two in the morning when it breaks. None of that gets easier because a chatbot wrote the first draft. It may even get harder, because the code looks finished. When researchers pointed a popular AI assistant at 89 security-relevant tasks, about 40 percent of the programs it produced had holes in them. In another study, people given an AI assistant wrote less secure code and felt more sure it was fine. Confidence went up while safety went down. That is close to the worst thing you can hand an amateur.
+
+And the "governed" part deserves a hard look, because governance is a claim, not a guarantee. In the fraud tool, one of the checks on dangerous actions is a second AI asked to judge whether a data request looks safe. The founders, to their credit, do not oversell it. They call it "best-effort screening, not enforcement," and say plainly that they assume the model can always be fooled. A login is not the same as row-level permission; a tool can hold no passwords of its own and still show an employee rows they were never meant to see, if the generated code is the thing deciding. An audit log proves an action happened; it does not stop it. Even on mature platforms, switching off a policy-breaking app is not instant; on one of them it can take a full day to take effect. And the oldest problem does not go anywhere: the person who built the tool moves to another team, and now the company owns a piece of load-bearing software nobody left understands, which is exactly the story we started with. There is a price attached, too. By one industry report, of the kind a security vendor pays for, breaches involving data left in unmanaged places run about 16 percent more expensive and take roughly a quarter longer to find. Hold the exact number loosely; the direction is not really in dispute.
+
+There is one more honest gap, and it sits in the record itself. The public account of the fraud tool is loud about scoped roles, brokered credentials, and audit logs, and quiet about the dull things that decide whether load-bearing software survives: how you roll a bad change back, how you test it, who answers when it fails in the middle of the night, who owns it a year from now. Silence there is not proof of trouble. It is not proof of safety either.
+
+Say all of that in one breath and the skeptic sounds unanswerable. Governance you cannot fully enforce, code you cannot fully trust, ownership you cannot guarantee. Why cheer for any of it?
+
+Because the skeptic is quietly comparing the new thing to the wrong thing.
+
+Every worry above is measured against good engineering: reviewed code, scoped identities, real tests, an owner on call, a proper way to handle the incident. Good engineering is wonderful. But it was not on offer. The whole reason the fraud notebook existed is that engineering had, in the founders' own words, "more important things to work on." The backlog was never going to reach it. So the honest comparison is not the notebook against a well-run internal platform. It is the notebook against the notebook, or against what people actually do instead: build the tool with a chatbot anyway, put it on a personal account, and paste the link into a Slack message. That version has no login, no scoped data, no log, no company owner, and sometimes a live production key sitting in plain text in a settings file. Against that, a scoped database role and an audit trail are a real step up. They are the first time the work is visible to anyone but the person who made it.
+
+<PullQuote>
+Governed amateur software is not permission to skip engineering. It is permission to stop lying about where the software already is.
+</PullQuote>
+
+If a domain expert's private file is already deciding which cases look risky, the company already has amateur software running in production. It always did. The only real question is whether that software stays invisible, unowned, and unwatched, or moves somewhere it can be seen, scoped, logged, handed to a new owner when its maker leaves, and shut off when it starts doing harm. If the governance is fake, the skeptic wins outright. If it is real, the skeptic is defending a status quo that was never safe, only quiet.
+
+Go back to the man at the bank, typing figures into a spreadsheet for hours every morning. It is easy to file him under "why amateurs should not build risk systems." I think that is exactly the wrong lesson. He was not a fool. He was the person who built the risk model, and the person who asked, without success, for the money to feed it properly. His mistake, if it was even his, was being forced to keep something enormous inside a private, manual, unwatched routine, where a bad number could hide for months because no one else was ever meant to look. The tragedy was not that a smart outsider built the tool. It was that he had to build it in the dark.
+
+That is what promoting the spreadsheet is really about. It does not turn amateurs into engineers, and it does not make a chatbot worth trusting. It drags the work that was always there into the light, where it can be governed at all.
+
+So the next time someone warns you about non-engineers building software, ask the quieter question back. Not whether they should. They already do, and they have since the brown vinyl binder. Ask instead how much of your own company is already running on software everyone has politely agreed not to call software, and what it would cost you, on the worst possible morning, to keep it that way.
