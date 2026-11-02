@@ -1,0 +1,134 @@
+name: Publish latest essay
+
+# Merges the newest open essay pull request every morning at 8:53 AM Pacific, then deploys Pages.
+# When no essay PR is open it does nothing and succeeds, so a day without a new essay publishes
+# nothing rather than failing.
+#
+# This lives in the site repo, not essays-engine, because the merge needs pull-requests: write on
+# THIS repo and the built-in GITHUB_TOKEN already has it (main carries no branch protection). No
+# PAT and no deploy key are involved.
+#
+# deploy.yml is dispatched explicitly because a merge performed with GITHUB_TOKEN does not start
+# workflows: GitHub suppresses runs from events caused by that token (workflow_dispatch and
+# repository_dispatch are the only exemptions). The merge push to main therefore never fires
+# deploy.yml on its own.
+#
+# The merge is a rebase merge so main receives the essay's own commit as authored by the engine,
+# not a github-actions[bot] squash commit.
+
+on:
+  schedule:
+    # 8:53 AM Pacific, timezone-aware so DST does not shift it. Off the top of the hour on purpose:
+    # GitHub's scheduler is congested there and delays or drops runs.
+    - cron: "53 8 * * *"
+      timezone: "America/Los_Angeles"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "true = report which PR would be published and merge nothing."
+        required: false
+        default: "false"
+
+permissions:
+  contents: write       # merge the PR branch into main
+  pull-requests: write  # list and merge the PR
+  actions: write        # dispatch deploy.yml
+
+concurrency:
+  group: publish-latest-essay
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Pick the newest open essay PR
+        id: pick
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          # Newest first, restricted to the engine's own essay/<YYYY-MM-DD-slug> branches; any
+          # other PR open against main is left alone.
+          PICK="$(gh pr list --repo "$REPO" --state open --base main --limit 100 \
+            --json number,createdAt,headRefName \
+            --jq '[.[] | select(.headRefName | test("^essay/[0-9]{4}-[0-9]{2}-[0-9]{2}-[a-z0-9-]+$"))]
+                  | sort_by(.createdAt) | reverse
+                  | (.[0] // empty) | "\(.number) \(.headRefName)"')"
+          if [ -z "$PICK" ]; then
+            echo "No open essay PR; nothing to publish."
+            echo "found=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          read -r NUMBER BRANCH <<< "$PICK"
+          # Re-validate what came back before it reaches a gh command.
+          case "$NUMBER" in
+            ''|*[!0-9]*) echo "::error::unexpected PR number: $NUMBER"; exit 1 ;;
+          esac
+          if ! printf '%s' "$BRANCH" | grep -qE '^essay/[0-9]{4}-[0-9]{2}-[0-9]{2}-[a-z0-9-]+$'; then
+            echo "::error::unexpected head branch: $BRANCH"; exit 1
+          fi
+          TITLE="$(gh pr view "$NUMBER" --repo "$REPO" --json title --jq .title)"
+          echo "Newest open essay PR: #$NUMBER — $TITLE ($BRANCH)"
+          {
+            echo "found=true"
+            echo "number=$NUMBER"
+            echo "branch=$BRANCH"
+            echo "title=$TITLE"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Merge it
+        if: ${{ steps.pick.outputs.found == 'true' && github.event.inputs.dry_run != 'true' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          NUMBER: ${{ steps.pick.outputs.number }}
+          TITLE: ${{ steps.pick.outputs.title }}
+          BRANCH: ${{ steps.pick.outputs.branch }}
+        run: |
+          set -euo pipefail
+          gh pr merge "$NUMBER" --repo "$REPO" --rebase
+          STATE="$(gh pr view "$NUMBER" --repo "$REPO" --json state --jq .state)"
+          if [ "$STATE" != "MERGED" ]; then
+            echo "::error::PR #$NUMBER is $STATE after the merge attempt"
+            exit 1
+          fi
+          echo "Merged #$NUMBER into main."
+          {
+            echo "### Published"
+            echo ""
+            echo "PR #$NUMBER — $TITLE (\`$BRANCH\`)"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Deploy Pages for the new main
+        if: ${{ steps.pick.outputs.found == 'true' && github.event.inputs.dry_run != 'true' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          BEFORE="$(gh run list --repo "$REPO" --workflow deploy.yml --limit 1 --json databaseId --jq '.[0].databaseId // 0')"
+          gh workflow run deploy.yml --repo "$REPO" --ref main
+          RUN_ID=""
+          for _ in $(seq 1 20); do
+            LATEST="$(gh run list --repo "$REPO" --workflow deploy.yml --limit 1 --json databaseId --jq '.[0].databaseId // 0')"
+            if [ "$LATEST" -gt "$BEFORE" ] 2>/dev/null; then RUN_ID="$LATEST"; break; fi
+            sleep 3
+          done
+          if [ -z "$RUN_ID" ]; then
+            echo "::error::the deploy run did not appear"
+            exit 1
+          fi
+          echo "Deploy run: https://github.com/$REPO/actions/runs/$RUN_ID"
+          gh run watch "$RUN_ID" --repo "$REPO" --exit-status --interval 10
+
+      - name: Report a dry run
+        if: ${{ steps.pick.outputs.found == 'true' && github.event.inputs.dry_run == 'true' }}
+        env:
+          NUMBER: ${{ steps.pick.outputs.number }}
+          TITLE: ${{ steps.pick.outputs.title }}
+          BRANCH: ${{ steps.pick.outputs.branch }}
+        run: |
+          echo "Dry run: would merge #$NUMBER — $TITLE ($BRANCH) and deploy."
