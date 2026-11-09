@@ -1,0 +1,415 @@
+name: Generate essay
+
+# Generates one essay through the private essays-engine pipeline (pipeline/emotive) and opens it as
+# a pull request in THIS repository. Publishing stays a reviewed step: publish-latest-essay.yml
+# merges the newest essay PR at 8:53 AM Pacific and dispatches the Pages deploy.
+#
+# Why the generator lives in the public site repo: GitHub-hosted runners are free for public
+# repositories, so the daily run no longer depends on the self-hosted box. The engine source is
+# cloned into $RUNNER_TEMP, outside the worktree, never committed, never uploaded, and dies with
+# the runner.
+#
+# Inference is beam-free (primary) with deepseek-v4.1-flash and big-pickle as fallbacks, all through
+# OpenCode and all enforced in code by assertAllowedModel(). GitHub is a readonly `web_search` MCP
+# host, not a model provider; this workflow installs no Copilot CLI and passes no Copilot model
+# credential.
+#
+# Security model, ported from essays-engine/.github/workflows/emotive-essay.yml:
+#  - Job `generate` runs the pipeline, which executes untrusted open-web content under the Claude
+#    agent. It holds NO write token: the engine deploy key is written, used to clone, and deleted in
+#    the same step, before any model call, and its GITHUB_TOKEN is read-only on this repo.
+#  - Job `publish-pr` holds the only write credential (the built-in GITHUB_TOKEN with contents and
+#    pull-requests write). It downloads the already validated essay from the cache, re-validates it,
+#    pushes a branch and opens the PR. It never runs the pipeline.
+#  - Every value crossing a job boundary is shape-validated and passed through env, never inlined
+#    into a shell as ${{ }}, so generated content cannot inject.
+#
+# Runs once a day at 2:07 PM Pacific plus manual dispatch. The schedule is timezone-aware, so the
+# run lands at the same local time all year. Its minute is deliberately off the top of the hour:
+# GitHub's scheduler is congested there and delays or drops runs.
+#
+# The rotation ledgers persist through actions/cache, which is not a transactional store. This is
+# the only scheduled writer on this repo, so there is no concurrent writer to lose updates against.
+# The move here reset them once, because the cache scope is per-repository. Published-topic dedup
+# does not depend on them (it reads src/content/essays); register and persona continuity re-seeds
+# over a few runs.
+
+on:
+  workflow_dispatch:
+    inputs:
+      publish_date:
+        description: "pubDate (YYYY-MM-DD). Blank = today."
+        required: false
+        default: ""
+      topic_hint:
+        description: "Optional specific direction for topic scouting only (steers the choice; all quality bars still apply). Blank = fully autonomous."
+        required: false
+        default: ""
+      theme:
+        description: "Optional broad industry/theme to keep the topic within (scouting only). Blank = fully autonomous."
+        required: false
+        default: ""
+  schedule:
+    # 2:07 PM Pacific, daily, year-round: `timezone` makes GitHub evaluate the cron in local time,
+    # so DST does not shift it. Minute 7 keeps clear of the top of the hour, where the scheduler is
+    # congested.
+    - cron: "7 14 * * *"
+      timezone: "America/Los_Angeles"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: generate-essay
+  cancel-in-progress: false
+
+env:
+  ENGINE_REPO: "animeshkundu/essays-engine"
+  # Broad em/en dash gate: glyphs + hex entities (opt. leading zeros, any case) + decimal entities
+  # + named entities + backslash-u escapes.
+  DASH_RE: '[\x{2014}\x{2013}\x{2015}\x{2212}]|&#x0*(?:2013|2014|2015|2212);|&#0*(?:8211|8212|8213|8722);|&(?:mdash|ndash|horbar|minus);|\\u0*(?:2013|2014|2015|2212)'
+  # Latest stable bun at the time of writing. Pinned by version and cached under this marker so
+  # every run gets a byte-identical binary; bump both lines deliberately to adopt a newer release.
+  BUN_PIN: "bun-v1.4.4"
+  BUN_URL: "https://github.com/oven-sh/bun/releases/download/bun-v1.4.4/bun-linux-x64.zip"
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    permissions:
+      contents: read
+      # Only so the built-in GITHUB_TOKEN can authenticate to the readonly GitHub MCP web_search
+      # endpoint. No Copilot model is called anywhere in this pipeline.
+      copilot-requests: write
+    outputs:
+      slug: ${{ steps.collect.outputs.slug }}
+      filename: ${{ steps.collect.outputs.filename }}
+    steps:
+      - name: Validate publish_date
+        env:
+          PUBLISH_DATE_IN: ${{ github.event.inputs.publish_date }}
+        run: |
+          set -euo pipefail
+          if [ -n "$PUBLISH_DATE_IN" ] && ! printf '%s' "$PUBLISH_DATE_IN" | grep -qE '^[0-9]{4}-[0-9]{2}-[0-9]{2}$'; then
+            echo "::error::publish_date must be empty or YYYY-MM-DD"; exit 1
+          fi
+
+      - name: Checkout site
+        uses: actions/checkout@v7
+
+      # The engine is private; this repository is public. The key is written, used and deleted
+      # inside this one step, so it is gone before any model call and no later step inherits it. A
+      # depth-1 clone, so no history lands on the runner either.
+      - name: Fetch the engine (deploy key exists only for this step)
+        env:
+          ENGINE_DEPLOY_KEY: ${{ secrets.ENGINE_DEPLOY_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -z "${ENGINE_DEPLOY_KEY:-}" ]; then
+            echo "::error::ENGINE_DEPLOY_KEY is not set on this repository"; exit 1
+          fi
+          KEY="$RUNNER_TEMP/engine_deploy_key"
+          trap 'rm -f "$KEY"' EXIT
+          umask 077
+          printf '%s\n' "$ENGINE_DEPLOY_KEY" > "$KEY"
+          GIT_SSH_COMMAND="ssh -i $KEY -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new" \
+            git clone --depth 1 --single-branch "git@github.com:$ENGINE_REPO.git" "$RUNNER_TEMP/engine"
+          rm -f "$KEY"
+          test -f "$RUNNER_TEMP/engine/pipeline/emotive/run.ts"
+
+      - name: Restore pinned bun
+        id: bun-cache
+        uses: actions/cache@v6
+        with:
+          path: ~/.bun-pinned
+          key: bun-${{ env.BUN_PIN }}
+
+      - name: Download bun (cache miss only)
+        if: steps.bun-cache.outputs.cache-hit != 'true'
+        run: |
+          set -euo pipefail
+          tmp="$(mktemp -d)"
+          curl -fsSL -o "$tmp/bun.zip" "$BUN_URL"
+          # Extracted with python3 rather than unzip: one less package to depend on, and python3 is
+          # present on the hosted image.
+          python3 -m zipfile -e "$tmp/bun.zip" "$tmp/x"
+          mkdir -p ~/.bun-pinned
+          find "$tmp/x" -name bun -type f -exec cp {} ~/.bun-pinned/bun \;
+          chmod +x ~/.bun-pinned/bun
+          rm -rf "$tmp"
+
+      - name: Put bun on PATH and record the build
+        run: |
+          set -euo pipefail
+          echo "$HOME/.bun-pinned" >> "$GITHUB_PATH"
+          VERSION="$("$HOME/.bun-pinned/bun" --version)"
+          DIGEST="$(sha256sum "$HOME/.bun-pinned/bun" | cut -d' ' -f1)"
+          # Every published essay stays traceable to the exact runtime that produced it.
+          {
+            echo "### Runtime"
+            echo ""
+            echo "- bun \`$VERSION\` (pin \`$BUN_PIN\`)"
+            echo "- sha256 \`$DIGEST\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Install pipeline deps
+        working-directory: ${{ runner.temp }}/engine/pipeline/emotive
+        run: bun install --frozen-lockfile
+
+      # Hard gate BEFORE any paid work: typecheck, the fail-closed suite, and a full offline dryRun
+      # of the whole graph. A broken runtime or a regressed gate fails here in minutes instead of
+      # hours into a billed run. Publishing is live from the first successful run, so this is the
+      # thing standing between a regressed gate and the public site.
+      - name: Verify the pipeline offline
+        working-directory: ${{ runner.temp }}/engine/pipeline/emotive
+        env:
+          CONDUKT_ENABLE_SDK: ""
+          OPENCODE_API_KEY: ""
+          GH_TOKEN: ""
+          GITHUB_TOKEN: ""
+        run: |
+          set -euo pipefail
+          bun run typecheck
+          bun test
+          bun smoke.ts
+
+      - name: Restore essay ledgers
+        uses: actions/cache@v6
+        with:
+          path: |
+            ${{ runner.temp }}/engine/pipeline/register-history.json
+            ${{ runner.temp }}/engine/pipeline/persona-history.json
+            ${{ runner.temp }}/engine/pipeline/topic-history.json
+          key: essay-ledgers-${{ github.run_id }}
+          restore-keys: |
+            essay-ledgers-
+
+      # No deploy key and no write token in this step's environment: the pipeline writes the essay
+      # into the site checkout, and the write credential only ever exists in publish-pr.
+      - name: Run the pipeline
+        working-directory: ${{ runner.temp }}/engine/pipeline/emotive
+        env:
+          OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CONDUKT_ENABLE_SDK: "1"
+          SITE_CONTENT_DIR: ${{ github.workspace }}/src/content/essays
+          PUBLISH_DATE: ${{ github.event.inputs.publish_date }}
+          ESSAY_TOPIC_HINT: ${{ github.event.inputs.topic_hint }}
+          ESSAY_THEME: ${{ github.event.inputs.theme }}
+          REGISTER_LEDGER_PATH: ${{ runner.temp }}/engine/pipeline/register-history.json
+          PERSONA_LEDGER_PATH: ${{ runner.temp }}/engine/pipeline/persona-history.json
+          TOPIC_LEDGER_PATH: ${{ runner.temp }}/engine/pipeline/topic-history.json
+        run: |
+          set -euo pipefail
+          # Streamed as well as captured: a run of this length once showed a blank step log for
+          # hours, so progress was indistinguishable from a hang. PIPESTATUS, not $?, because
+          # through a pipe $? is tee's status and every failure would be recorded as success.
+          bun run.ts "$RUNNER_TEMP/.essay-run" 2>&1 | tee "$RUNNER_TEMP/emotive-run.log"
+          exit "${PIPESTATUS[0]}"
+
+      # Only date-prefixed essays count. The 2026-11-05 run generated a real essay and also left a
+      # stray src/content/essays/post.mdx behind; requiring exactly one match over every touched
+      # file threw away an hour of billed generation for that. Unrelated paths are now a warning.
+      - name: Collect + validate the single new essay
+        id: collect
+        run: |
+          set -euo pipefail
+          cd "$GITHUB_WORKSPACE"
+          mapfile -t TOUCHED < <(git status --porcelain=v1 -- src/content/essays | awk '{print $2}')
+          NEW=()
+          for path in "${TOUCHED[@]:-}"; do
+            [ -n "$path" ] || continue
+            if printf '%s' "$path" | grep -qE '^src/content/essays/[0-9]{4}-[0-9]{2}-[0-9]{2}-[a-z0-9-]+\.mdx$'; then
+              NEW+=("$path")
+            else
+              echo "::warning::the run also touched $path; ignoring it"
+            fi
+          done
+          if [ "${#NEW[@]}" -ne 1 ]; then
+            echo "::error::expected exactly one new essay, got ${#NEW[@]}"
+            printf '%s\n' "${NEW[@]:-}"
+            exit 1
+          fi
+          FILE="${NEW[0]}"
+          BASENAME="$(basename "$FILE")"
+          if ! printf '%s' "$BASENAME" | grep -qE '^[0-9]{4}-[0-9]{2}-[0-9]{2}-[a-z0-9-]+\.mdx$'; then
+            echo "::error::bad essay filename: $BASENAME"; exit 1
+          fi
+          # The dash gate is grep -P. A grep without it exits 2, which an `if grep ...` reads as
+          # "no match" and would silently pass the gate, so prove it works before relying on it.
+          if ! printf 'x' | grep -qP 'x'; then
+            echo "::error::grep -P is unavailable; the dash gate cannot run"; exit 1
+          fi
+          if grep -nP "$DASH_RE" "$FILE"; then
+            echo "::error::forbidden dash found in generated essay"; exit 1
+          fi
+          SLUG="$(printf '%s' "$BASENAME" | sed -E 's/^[0-9]{4}-[0-9]{2}-[0-9]{2}-//; s/\.mdx$//')"
+          if ! printf '%s' "$SLUG" | grep -qE '^[a-z0-9-]+$'; then
+            echo "::error::bad slug: $SLUG"; exit 1
+          fi
+          mkdir -p "$RUNNER_TEMP/out"
+          cp "$FILE" "$RUNNER_TEMP/out/$BASENAME"
+          echo "slug=$SLUG" >> "$GITHUB_OUTPUT"
+          echo "filename=$BASENAME" >> "$GITHUB_OUTPUT"
+
+      # Primary transport between the two jobs. The artifact store draws on an account-wide quota
+      # shared with every other repository, and when that is exhausted an hour of billed generation
+      # is thrown away at the final step. The cache draws on a separate quota, so the essay travels
+      # that way instead. Keyed on run_id so publish-pr can only ever read this run's essay.
+      - name: Hand the essay to publish-pr through the cache
+        uses: actions/cache/save@v6
+        with:
+          path: ${{ runner.temp }}/out
+          key: essay-${{ github.run_id }}
+
+  publish-pr:
+    needs: generate
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # The only job with a write credential, and it never runs the pipeline.
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout site
+        uses: actions/checkout@v7
+        with:
+          ref: main
+
+      # Matches the cache the generate job wrote, keyed on this run so it cannot pick up any other
+      # run's essay.
+      #
+      # Retried, because a newly written cache is not instantly readable. On run 31132779381 the
+      # entry was written at 01:06:26 and a restore 37s later reported "Cache not found", while a
+      # probe reading its own entry 93s after writing hit it fine. The exact propagation window is
+      # not documented, so rather than guess a single sleep this tries, waits, and tries again.
+      - name: Receive the essay through the cache
+        id: restore
+        uses: actions/cache/restore@v6
+        with:
+          path: ${{ runner.temp }}/out
+          key: essay-${{ github.run_id }}
+
+      - name: Wait for the cache to become readable
+        if: steps.restore.outputs.cache-hit != 'true'
+        run: sleep 45
+
+      - name: Receive the essay through the cache (second attempt)
+        id: restore2
+        if: steps.restore.outputs.cache-hit != 'true'
+        uses: actions/cache/restore@v6
+        with:
+          path: ${{ runner.temp }}/out
+          key: essay-${{ github.run_id }}
+
+      - name: Wait again
+        if: steps.restore.outputs.cache-hit != 'true' && steps.restore2.outputs.cache-hit != 'true'
+        run: sleep 60
+
+      - name: Receive the essay through the cache (final attempt)
+        if: steps.restore.outputs.cache-hit != 'true' && steps.restore2.outputs.cache-hit != 'true'
+        uses: actions/cache/restore@v6
+        with:
+          path: ${{ runner.temp }}/out
+          key: essay-${{ github.run_id }}
+          fail-on-cache-miss: true
+
+      - name: Confirm the essay arrived
+        env:
+          FILENAME: ${{ needs.generate.outputs.filename }}
+        run: |
+          set -euo pipefail
+          case "$FILENAME" in *$'\n'*) echo "::error::filename contains newline"; exit 1;; esac
+          if ! printf '%s' "$FILENAME" | grep -qE '^[0-9]{4}-[0-9]{2}-[0-9]{2}-[a-z0-9-]+\.mdx$'; then
+            echo "::error::bad filename: $FILENAME"; exit 1
+          fi
+          if [ ! -f "$RUNNER_TEMP/out/$FILENAME" ]; then
+            echo "::error::the essay did not survive the handoff"
+            ls -la "$RUNNER_TEMP/out" 2>/dev/null || echo "(no out/ directory)"
+            exit 1
+          fi
+          mkdir -p essay
+          cp "$RUNNER_TEMP/out/$FILENAME" "essay/$FILENAME"
+          echo "received $FILENAME ($(wc -c < "essay/$FILENAME") bytes)"
+
+      - name: Re-validate the artifact
+        env:
+          SLUG: ${{ needs.generate.outputs.slug }}
+          FILENAME: ${{ needs.generate.outputs.filename }}
+        run: |
+          set -euo pipefail
+          if ! printf '%s' "$SLUG" | grep -qE '^[a-z0-9-]+$'; then echo "::error::bad slug"; exit 1; fi
+          if ! printf '%s' "$FILENAME" | grep -qE '^[0-9]{4}-[0-9]{2}-[0-9]{2}-[a-z0-9-]+\.mdx$'; then echo "::error::bad filename"; exit 1; fi
+          test -f "essay/$FILENAME"
+          # See the collect step: a grep without -P exits 2 and would silently pass the gate.
+          if ! printf 'x' | grep -qP 'x'; then echo "::error::grep -P is unavailable; the dash gate cannot run"; exit 1; fi
+          if grep -nP "$DASH_RE" "essay/$FILENAME"; then echo "::error::dash in artifact"; exit 1; fi
+
+      # GITHUB_TOKEN pushes do not start workflows, so open-essay-pr.yml would never see this
+      # branch; the PR is opened explicitly instead.
+      - name: Push the essay branch and open the PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SLUG: ${{ needs.generate.outputs.slug }}
+          FILENAME: ${{ needs.generate.outputs.filename }}
+        run: |
+          set -euo pipefail
+
+          # Re-validate the trusted-shape tokens one more time BEFORE deriving a branch name, so
+          # nothing downstream ever sees an unexpected shape even if an earlier gate changed.
+          case "$SLUG" in *$'\n'*) echo "::error::slug contains newline"; exit 1;; esac
+          case "$FILENAME" in *$'\n'*) echo "::error::filename contains newline"; exit 1;; esac
+          if ! printf '%s' "$SLUG" | grep -qE '^[a-z0-9-]+$'; then echo "::error::bad slug"; exit 1; fi
+          if ! printf '%s' "$FILENAME" | grep -qE '^[0-9]{4}-[0-9]{2}-[0-9]{2}-[a-z0-9-]+\.mdx$'; then
+            echo "::error::bad filename"; exit 1
+          fi
+          FILE_STEM="${FILENAME%.mdx}"
+          FILE_SLUG="${FILE_STEM#????-??-??-}"
+          if [ "$FILE_SLUG" != "$SLUG" ]; then
+            echo "::error::filename slug ($FILE_SLUG) does not match slug ($SLUG)"; exit 1
+          fi
+          test -f "$GITHUB_WORKSPACE/essay/$FILENAME"
+          # See the collect step: a grep without -P exits 2 and would silently pass the gate.
+          if ! printf 'x' | grep -qP 'x'; then echo "::error::grep -P is unavailable; the dash gate cannot run"; exit 1; fi
+          if grep -nP "$DASH_RE" "$GITHUB_WORKSPACE/essay/$FILENAME"; then
+            echo "::error::dash in artifact"; exit 1
+          fi
+
+          # The essay/** prefix is what publish-latest-essay.yml selects on, so it is kept rather
+          # than given a generator-specific one.
+          BRANCH="essay/$FILE_STEM"
+          if ! printf '%s' "$BRANCH" | grep -qE '^essay/[0-9]{4}-[0-9]{2}-[0-9]{2}-[a-z0-9-]+$'; then
+            echo "::error::refusing to use unexpected branch name: $BRANCH"; exit 1
+          fi
+
+          git config user.name "animeshkundu"
+          git config user.email "animeshkundu@users.noreply.github.com"
+
+          DEST="src/content/essays/$FILENAME"
+          if [ -e "$DEST" ]; then
+            echo "::error::essay already exists on main: $DEST"; exit 1
+          fi
+
+          if git ls-remote --exit-code --heads origin "refs/heads/$BRANCH" >/dev/null 2>&1; then
+            echo "Branch $BRANCH already on remote; nothing to push."
+            exit 0
+          fi
+
+          git switch -c "$BRANCH" origin/main
+          cp "$GITHUB_WORKSPACE/essay/$FILENAME" "$DEST"
+          git add "$DEST"
+          TITLE="$(sed -n 's/^title:[[:space:]]*//p' "$DEST" | head -1 | sed 's/^"//; s/"[[:space:]]*$//')"
+          [ -n "$TITLE" ] || TITLE="$(printf '%s' "$SLUG" | sed 's/-/ /g; s/^./\U&/')"
+          git commit -q -m "$TITLE"
+          git push origin "HEAD:$BRANCH"
+
+          BODY="Generated by the emotive essay pipeline in \`animeshkundu/essays-engine\`. Merging publishes it; if it is left open, publish-latest-essay.yml merges the newest essay PR at 8:53 AM Pacific."
+          gh pr create --repo "$REPO" --base main --head "$BRANCH" --title "$TITLE" --body "$BODY"
+          {
+            echo "### Opened"
+            echo ""
+            echo "\`$BRANCH\` — $TITLE"
+          } >> "$GITHUB_STEP_SUMMARY"
