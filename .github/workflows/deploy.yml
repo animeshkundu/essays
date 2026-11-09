@@ -1,25 +1,30 @@
+name: Deploy to GitHub Pages
+
 on:
   push:
     branches: [main]
   workflow_dispatch: {}
 
+# The build job compiles MDX from src/content/essays, which can execute code at build time. It
+# therefore holds no deployment credential and no OIDC token; both live only on the deploy job,
+# which runs no repository code.
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v6
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: 24
           cache: npm
       - run: npm ci
       - run: npx astro build
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3
         with:
           path: ./dist
 
@@ -27,5 +32,8 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     environment: github-pages
+    permissions:
+      pages: write
+      id-token: write
     steps:
-      - uses: actions/deploy-pages@v5
+      - uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5

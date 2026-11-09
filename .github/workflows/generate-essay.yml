@@ -72,6 +72,11 @@ env:
   # every run gets a byte-identical binary; bump both lines deliberately to adopt a newer release.
   BUN_PIN: "bun-v1.4.4"
   BUN_URL: "https://github.com/oven-sh/bun/releases/download/bun-v1.4.4/bun-linux-x64.zip"
+  # Digests of the pinned release: the downloaded archive and the extracted binary. The archive is
+  # checked before extraction and the binary on EVERY run, cache hit included, so a poisoned cache
+  # entry fails closed instead of executing.
+  BUN_ZIP_SHA256: "bf8ccbfb2b0b80159e0f9a6d15c55317add8077534dbc6130a3edb52fccb395c"
+  BUN_BIN_SHA256: "10702245766b225e70bbf6235fd6b47214fd94b4760d00ffaed8ab0df57ac235"
 
 jobs:
   generate:
@@ -86,6 +91,23 @@ jobs:
       slug: ${{ steps.collect.outputs.slug }}
       filename: ${{ steps.collect.outputs.filename }}
     steps:
+      - name: Only the owner or the scheduler may run this
+        env:
+          EVENT: ${{ github.event_name }}
+          ACTOR: ${{ github.actor }}
+          TRIGGERING_ACTOR: ${{ github.triggering_actor }}
+        run: |
+          set -euo pipefail
+          # Unconditional and first: a fork that kept this file must fail here, even on a schedule.
+          if [ "$GITHUB_REPOSITORY" != "animeshkundu/essays" ]; then
+            echo "::error::not the canonical repository"; exit 1
+          fi
+          if [ "$EVENT" = "schedule" ]; then exit 0; fi
+          ACTOR="${TRIGGERING_ACTOR:-$ACTOR}"
+          if [ "$ACTOR" != "animeshkundu" ]; then
+            echo "::error::only animeshkundu may dispatch this workflow (actor: $ACTOR)"; exit 1
+          fi
+
       - name: Validate publish_date
         env:
           PUBLISH_DATE_IN: ${{ github.event.inputs.publish_date }}
@@ -96,7 +118,10 @@ jobs:
           fi
 
       - name: Checkout site
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          # This job never pushes; the write credential lives only in publish-pr.
+          persist-credentials: false
 
       # The engine is private; this repository is public. The key is written, used and deleted
       # inside this one step, so it is gone before any model call and no later step inherits it. A
@@ -120,7 +145,7 @@ jobs:
 
       - name: Restore pinned bun
         id: bun-cache
-        uses: actions/cache@v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: ~/.bun-pinned
           key: bun-${{ env.BUN_PIN }}
@@ -131,6 +156,8 @@ jobs:
           set -euo pipefail
           tmp="$(mktemp -d)"
           curl -fsSL -o "$tmp/bun.zip" "$BUN_URL"
+          # Authenticate the download before anything is extracted from it.
+          printf '%s  %s\n' "$BUN_ZIP_SHA256" "$tmp/bun.zip" | sha256sum -c -
           # Extracted with python3 rather than unzip: one less package to depend on, and python3 is
           # present on the hosted image.
           python3 -m zipfile -e "$tmp/bun.zip" "$tmp/x"
@@ -142,9 +169,14 @@ jobs:
       - name: Put bun on PATH and record the build
         run: |
           set -euo pipefail
+          # Checked on every run, cache hit included: a cache entry is not a trusted artifact.
+          DIGEST="$(sha256sum "$HOME/.bun-pinned/bun" | cut -d' ' -f1)"
+          if [ "$DIGEST" != "$BUN_BIN_SHA256" ]; then
+            echo "::error::bun binary digest $DIGEST does not match the pinned $BUN_BIN_SHA256"
+            exit 1
+          fi
           echo "$HOME/.bun-pinned" >> "$GITHUB_PATH"
           VERSION="$("$HOME/.bun-pinned/bun" --version)"
-          DIGEST="$(sha256sum "$HOME/.bun-pinned/bun" | cut -d' ' -f1)"
           # Every published essay stays traceable to the exact runtime that produced it.
           {
             echo "### Runtime"
@@ -175,7 +207,7 @@ jobs:
           bun smoke.ts
 
       - name: Restore essay ledgers
-        uses: actions/cache@v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: |
             ${{ runner.temp }}/engine/pipeline/register-history.json
@@ -259,7 +291,7 @@ jobs:
       # is thrown away at the final step. The cache draws on a separate quota, so the essay travels
       # that way instead. Keyed on run_id so publish-pr can only ever read this run's essay.
       - name: Hand the essay to publish-pr through the cache
-        uses: actions/cache/save@v6
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: ${{ runner.temp }}/out
           key: essay-${{ github.run_id }}
@@ -273,8 +305,26 @@ jobs:
       contents: write
       pull-requests: write
     steps:
+      # Repeated here, not just in `generate`: "re-run failed jobs" can restart this job alone,
+      # and github.triggering_actor names whoever pressed the button.
+      - name: Only the owner or the scheduler may run this
+        env:
+          EVENT: ${{ github.event_name }}
+          ACTOR: ${{ github.actor }}
+          TRIGGERING_ACTOR: ${{ github.triggering_actor }}
+        run: |
+          set -euo pipefail
+          if [ "$GITHUB_REPOSITORY" != "animeshkundu/essays" ]; then
+            echo "::error::not the canonical repository"; exit 1
+          fi
+          if [ "$EVENT" = "schedule" ]; then exit 0; fi
+          ACTOR="${TRIGGERING_ACTOR:-$ACTOR}"
+          if [ "$ACTOR" != "animeshkundu" ]; then
+            echo "::error::only animeshkundu may dispatch this workflow (actor: $ACTOR)"; exit 1
+          fi
+
       - name: Checkout site
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           ref: main
 
@@ -287,7 +337,7 @@ jobs:
       # not documented, so rather than guess a single sleep this tries, waits, and tries again.
       - name: Receive the essay through the cache
         id: restore
-        uses: actions/cache/restore@v6
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: ${{ runner.temp }}/out
           key: essay-${{ github.run_id }}
@@ -299,7 +349,7 @@ jobs:
       - name: Receive the essay through the cache (second attempt)
         id: restore2
         if: steps.restore.outputs.cache-hit != 'true'
-        uses: actions/cache/restore@v6
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: ${{ runner.temp }}/out
           key: essay-${{ github.run_id }}
@@ -310,7 +360,7 @@ jobs:
 
       - name: Receive the essay through the cache (final attempt)
         if: steps.restore.outputs.cache-hit != 'true' && steps.restore2.outputs.cache-hit != 'true'
-        uses: actions/cache/restore@v6
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: ${{ runner.temp }}/out
           key: essay-${{ github.run_id }}
