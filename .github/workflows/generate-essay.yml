@@ -18,6 +18,11 @@ name: Generate essay
 #  - Job `generate` runs the pipeline, which executes untrusted open-web content under the Claude
 #    agent. It holds NO write token: the engine deploy key is written, used to clone, and deleted in
 #    the same step, before any model call, and its GITHUB_TOKEN is read-only on this repo.
+#  - The OpenCode key never enters the pipeline step's environment. A staging step writes it to a
+#    0600 file in $RUNNER_TEMP and passes only the path; the runtime reads it, unlinks it, and
+#    scrubs the environment before the Claude CLI is spawned. The model has the Read tool, so a key
+#    left in process.env would be readable through /proc/self/environ and exfiltratable through
+#    web_search or WebFetch.
 #  - Job `publish-pr` holds the only write credential (the built-in GITHUB_TOKEN with contents and
 #    pull-requests write). It downloads the already validated essay from the cache, re-validates it,
 #    pushes a branch and opens the PR. It never runs the pipeline.
@@ -198,6 +203,7 @@ jobs:
         env:
           CONDUKT_ENABLE_SDK: ""
           OPENCODE_API_KEY: ""
+          OPENCODE_API_KEY_FILE: ""
           GH_TOKEN: ""
           GITHUB_TOKEN: ""
         run: |
@@ -217,12 +223,28 @@ jobs:
           restore-keys: |
             essay-ledgers-
 
+      # The key is handed over as a file, not an environment variable. This step runs the model, the
+      # model can Read any path, and anything in process.env is readable through
+      # /proc/self/environ; the runtime reads this file, unlinks it, and scrubs the environment
+      # before the Claude CLI is spawned. The file is outside the worktree and never cached.
+      - name: Stage the OpenCode key outside every environment
+        env:
+          OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -z "${OPENCODE_API_KEY:-}" ]; then
+            echo "::error::OPENCODE_API_KEY is not set on this repository"; exit 1
+          fi
+          umask 077
+          printf '%s' "$OPENCODE_API_KEY" > "$RUNNER_TEMP/opencode.key"
+
       # No deploy key and no write token in this step's environment: the pipeline writes the essay
-      # into the site checkout, and the write credential only ever exists in publish-pr.
+      # into the site checkout, and the write credential only ever exists in publish-pr. The
+      # OpenCode key arrives as OPENCODE_API_KEY_FILE, never as a value in this step's environment.
       - name: Run the pipeline
         working-directory: ${{ runner.temp }}/engine/pipeline/emotive
         env:
-          OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+          OPENCODE_API_KEY_FILE: ${{ runner.temp }}/opencode.key
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CONDUKT_ENABLE_SDK: "1"
@@ -240,6 +262,12 @@ jobs:
           # through a pipe $? is tee's status and every failure would be recorded as success.
           bun run.ts "$RUNNER_TEMP/.essay-run" 2>&1 | tee "$RUNNER_TEMP/emotive-run.log"
           exit "${PIPESTATUS[0]}"
+
+      # The runtime normally unlinks the key on first read. This covers the paths where it never
+      # got that far (missing dependency, crash before createSdkRuntime, cancellation).
+      - name: Remove the staged key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/opencode.key"
 
       # Only date-prefixed essays count. The 2026-11-05 run generated a real essay and also left a
       # stray src/content/essays/post.mdx behind; requiring exactly one match over every touched
