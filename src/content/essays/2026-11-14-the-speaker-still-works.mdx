@@ -1,0 +1,62 @@
+---
+pubDate: 2026-11-14
+title: "The Speaker Still Works"
+description: "A thermostat that still clicks and a speaker that still fills the room can lose the features their owners paid for, because the most expensive part of a connected device was never in the box."
+category: essay
+tags: ["connected devices", "ownership", "smart home", "right to repair"]
+slug: the-speaker-still-works
+minutesRead: 5
+
+---
+
+On October 25, 2025, the first- and second-generation Nest Learning Thermostats stopped being smart. Nothing in them broke.
+
+The relay still closed. The furnace still came on when the dial asked for it. The screen still glowed with the set temperature. An owner could still walk to the wall, turn the ring by hand, and heat the house the way people heated houses in 2010. What vanished was the part that was never in the box: the app on the phone, the learning that had shaped the household's mornings, the view of energy use, the voice that answered from the kitchen, the ability to warm the house from an airport.
+
+A connected device is not a product you own. It is a subscription to someone else's server that happens to ship in a box, and the hardware is just the receipt.
+
+<PullQuote>
+A connected device is not a product you own. It is a subscription to someone else's server that happens to ship in a box, and the hardware is just the receipt.
+</PullQuote>
+
+That is a strong claim, and I mean it to be disputed. A large minority of informed readers would reject it outright, and they are right to push back. I will make their case in full, in my own voice, with no hedge, before I try to answer it.
+
+The strange thing is not that support ended. It is what "ended" means here. The thermostat reads the room temperature and sends it up. Google's servers send back the setpoint, the schedule, the mode. The learning happens there. The app on the phone talks to the server, not to the device on the wall. So when Google retires the endpoints for the legacy models, nothing travels to the house. The company does not reach into the home. It stops answering. The device keeps clicking because clicking was never the cloud's job.
+
+Wear is the boring explanation. The device did not wear out. The hardware is fine. The permission expired. A machine that still works has not been broken. It has been demoted.
+
+The pattern is not one company. It is the shape of the product. In May 2016, Revolv hubs sold for about three hundred dollars stopped working when the company's cloud shut down after a Google acquisition. In January 2020, Sonos ran a program that permanently disabled still-working speakers in exchange for a discount on new ones, then reversed it after public backlash. Wink pivoted to a monthly subscription in 2020 to keep its hubs alive. Insteon's servers went dark in April 2022. Google ended support for Dropcam and Nest Secure on April 8, 2024. And in May 2026, Bose will end cloud support for SoundTouch speakers sold between 2013 and 2020. The speakers will still play sound over Bluetooth and a cable. The app will no longer list them.
+
+The mechanism is the same in every case. The device is a sensor and an actuator with a network stack. Identity, entitlements, schedules, and service authentication live in the vendor's account system, not in the box. The vendor holds the firmware signing keys, the cloud endpoints, the app, and the agreements with third-party services. The owner holds the object, the power, and the network connection. The owner can unplug the device, but cannot make it smarter again. Function can be withdrawn without anyone entering the house, because the valuable part of the product was never in the house to begin with.
+
+A first-generation Nest sold in 2011 at about two hundred and forty-nine dollars received roughly fourteen years of cloud support before the October 25, 2025 cutoff. A second-generation unit sold in 2012 received roughly thirteen. A SoundTouch speaker bought in 2016 receives about ten years of cloud support before May 2026. A conventional thermostat with no network connection is commonly expected to last twenty to thirty years. A quality loudspeaker is expected to last decades. Cloud support covers roughly the first half of the hardware's plausible working life, and often less. On the same purchase, that is about eighteen dollars per year of supported life for the 2011 thermostat, and about thirty-five dollars per year for the 2016 speaker. These are back-of-the-envelope figures, not company numbers, and they are meant to make the lease visible, not to settle it.
+
+The stakes are not only arithmetic. The United Nations reported sixty-two million metric tonnes of electronic waste generated in 2022, with about twenty-two percent formally collected and recycled. The specific share attributable to still-working but unsupported devices is not measured, and I will not invent one. But the mechanism is the point: hardware that still heats and cools, or still fills a room, becomes waste because permission expired, not because it failed. The embodied cost was spent once. The cloud permission was spent on a schedule the owner did not set.
+
+There is also an irony in what was sold. Nest's own published figures claim roughly ten to twelve percent savings on heating and fifteen percent on cooling, and the ENERGY STAR program cites about eight percent for certified smart thermostats. Those are company and program claims, not independent measurements, and I attribute them as such. The buyer in 2011 or 2012 paid a premium for Auto-Schedule, remote control, energy history, and Home/Away Assist, on the promise that the device would keep learning the household's patterns and trim the bill. After October 25, 2025, the exchange is closed on one side only. The price is sunk. The learning stops. The thermostat still clicks, but the savings logic does not. The speaker on the shelf still fills the room, but the owner who bought it for effortless multi-room streaming now manages a Bluetooth connection and a cable across the rug, or presses frozen preset buttons that, if the reported behavior holds, still play stations programmed years ago and can no longer be reprogrammed through the app.
+
+The owner who set the schedule once and let the thermostat learn their mornings now walks to the hallway. The owner who nudged the temperature from a car or an airport cannot. The cutoff is often noticed first by the person who never used the app, because the thing that stopped working is invisible to them until the house is cold or the music will not start. In many households one person set up the app and the other never touched it. The cutoff lands on the routine, not on the device.
+
+Now the steelman, stated as strongly as I can.
+
+Ending cloud support for a thermostat sold in 2011 or 2012 after roughly thirteen or fourteen years, while leaving it able to heat and cool, is ordinary product lifecycle management. The buyer paid for a device with a finite software service attached. The hardware's core job survives. Keeping obsolete firmware online is costly and, in some readings, irresponsible.
+
+The cost argument is real. Maintaining authentication servers, APIs, and update channels for a shrinking base has a per-user cost, and old firmware often cannot support modern TLS versions or current APIs. "Keeping it running" is not a passive choice. It requires engineering work to bridge old clients to new infrastructure, plus testing, plus support tickets for a product no longer sold. A shrinking user base means fewer bug reports and less coverage, which raises the risk that a change breaks a small group of devices silently.
+
+The security argument is real too. Internet-connected devices that no longer receive firmware updates become a standing liability: unpatched vulnerabilities, weak cryptography, account-takeover risk. Ending cloud support removes the device from the vendor's security perimeter instead of leaving an unpatched endpoint pretending to be supported. This is the argument that the cutoff is protective, not punitive, and it is strongest if the vendor can show the devices cannot be patched to modern standards.
+
+By the standards of software-dependent products, thirteen or fourteen years is a long time. Phones routinely lose operating system support after five to seven years. Streaming apps drop old televisions. Cars lose connected services when networks shut down. The steelman leans on the idea that a buyer in 2011 or 2012 bought a product of its era, not a promise of eternal service. And the core function does remain. The thing on the wall still regulates temperature. The thing on the shelf still fills the room. Only the convenience layer ends. Google pointed affected owners toward newer thermostats. Bose's situation is harder, because SoundTouch was discontinued as a product line in 2020, so there is no like-for-like successor, and owners are left with Bluetooth and a cable.
+
+The contract argument is the steelman's foundation. Connected devices are sold under terms of service that reserve the right to change or discontinue services. The buyer accepted them. The steelman concedes the weakness honestly: few buyers read the terms, and the packaging and marketing emphasized convenience, savings, and "works with your phone," not "service may end in thirteen years." Whether any support window was stated at the time of sale is not clear from the public record I could check. If none was stated, the "you knew it was finite" defense loses most of its force.
+
+The "normal lifecycle" comparison has one more strength and one more weakness. It is strongest for buyers who treated the device as a gadget. It is weakest for buyers who treated it as part of the house, because a phone is replaced in a pocket and a thermostat is wired into a wall. Replacing it means an installer, a wall, and waste.
+
+Where the steelman breaks is not in its facts but in its weighting. "The core function remains" understates what buyers paid for. A thermostat bought for Auto-Schedule and remote control from vacation, or a speaker bought for multi-room streaming, loses the reason it was bought, even if it still clicks and plays. The security argument is partly pretextual: many legacy devices could be opened to local control or community maintenance rather than withdrawn by policy. Neither company offers a documented, owner-facing way to point the device at a server of the owner's choosing. Bose SoundTouch speakers do expose a local HTTP API (commonly port 8090) that Home Assistant uses, which undercuts the "pure thin client" picture but does not give an owner a supported path. The "normal lifecycle" comparison ignores installation cost. And working hardware discarded because permission expired is a real cost the steelman does not price, against a global backdrop of sixty-two million metric tonnes of electronic waste in 2022.
+
+The deepest problem is disclosure. Even if the contract permits the cutoff, the buyer's reasonable expectation, set by marketing, may not have. The most expensive part of the device was never in the box, and that was never on the box either.
+
+I should say plainly what I do not know. Whether Bose offered any compensation, credit, or trade-in to SoundTouch owners is not confirmed in the public record I could check, and I am not going to assert either that nothing was offered or that something was. The same uncertainty applies to the exact discount terms Google offered affected Nest owners. These are the kinds of facts that would change the weight of the argument, and they are the first things a careful reader should verify.
+
+I am the kind of customer this argument is about. The convenience any of us bought is the same convenience that can be withdrawn, and most of us have been treating a lease as furniture. That does not make the steelman wrong. It makes the steelman's comfort harder to keep.
+
+The thermostat on the wall still clicks. The speaker on the shelf still fills the room. An owner still walks to the hallway to turn a dial. Someone still presses a frozen preset button that, if the reported behavior holds, plays a station programmed years ago. The hardware works. What remains is whether the box ever said what the buyer was actually buying, and whether the person who wired it into a wall was ever told that the most expensive part of it was never in the box.
